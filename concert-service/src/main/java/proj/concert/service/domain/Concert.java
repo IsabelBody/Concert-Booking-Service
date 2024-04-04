@@ -12,6 +12,8 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 public class Concert{
 
+    // step 1: creating a domain model
+
     // TODO Implement this class.
 
     public Set<LocalDateTime> getDates() {

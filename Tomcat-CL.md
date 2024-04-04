@@ -1,4 +1,4 @@
-##Setting up Tomcat
+## Setting up Tomcat
 
 This is intended to provide a very brief set of instructions for manually
 setting up a [Tomcat](https://tomcat.apache.org) server from the command line
