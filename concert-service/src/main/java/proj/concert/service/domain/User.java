@@ -10,13 +10,20 @@ import javax.persistence.*;
  * A User object has an ID (a database primary key value), a username, a password and a version number.
  */
 @Entity
+@Table(name="USERS")
 public class User {
 
     @Id
-    @GeneratedValue()
+    @GeneratedValue
     private Long id;
+
+    @Column(name = "USERNAME", nullable = false)
     private String username;
+
+    @Column(name = "PASSWORD", nullable = false)
     private String password;
+
+    @Column(name = "VERSION")
     private Long version;
 
     public User() { }
