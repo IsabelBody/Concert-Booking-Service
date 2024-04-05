@@ -5,7 +5,15 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import javax.persistence.*;
 
+/**
+ * Class to represent a User.
+ * A User object has an ID (a database primary key value), a username, a password and a version number.
+ */
+@Entity
 public class User {
+
+    @Id
+    @GeneratedValue()
     private Long id;
     private String username;
     private String password;
