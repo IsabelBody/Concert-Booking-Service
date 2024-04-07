@@ -16,6 +16,7 @@ public class Seat {
 	@Column(name = "label")
 	private String label;
 
+	// make into enum?
 	@Column(name = "isBooked")
 	private boolean isBooked;
 
@@ -25,6 +26,10 @@ public class Seat {
 
 	@Column(name = "price")
 	private BigDecimal price;
+
+	@ManyToOne
+	@JoinColumn(name = "BOOKING_ID")
+	private Booking booking;
 
 	public Seat() {}
 
