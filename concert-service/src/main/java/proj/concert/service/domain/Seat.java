@@ -1,14 +1,14 @@
 package proj.concert.service.domain;
 
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 import javax.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Objects;
-import javax.persistence.*;
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
+
 
 @Entity
+@IdClass(SeatKey.class)
 @Table(name = "SEATS")
 public class Seat {
 
@@ -19,6 +19,7 @@ public class Seat {
 	@Column(name = "isBooked")
 	private boolean isBooked;
 
+	@Id
 	@Column(name = "date")
 	private LocalDateTime date;
 
@@ -69,8 +70,6 @@ public class Seat {
 	}
 
 	// equals and hashCode methods
-
-	// Override equals and hashCode methods
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) return true;
@@ -82,13 +81,16 @@ public class Seat {
 				Objects.equals(price, seat.price);
 	}
 
-	// we can now hash over seats in a list
-	// needed for checking number of seats booked.
 	@Override
 	public int hashCode() {
-		return Objects.hash(label, isBooked, date, price);
+		return new HashCodeBuilder(17, 37)
+				// two prime numbers, no significance
+				.append(label)
+				.append(isBooked)
+				.append(date)
+				.append(price)
+				.toHashCode();
 	}
 
-	// could add compareTo method to query if object A.equals(object B)
-	// could add toString() method to get description of seat value.
+// could add compareTo method for ordering
 }
