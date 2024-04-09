@@ -8,22 +8,24 @@ import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import proj.concert.common.types.Genre;
 
+@Entity
+@Table(name="PERFORMERS")
 public class Performer {
 
     @Id
     @GeneratedValue
     private Long id;
 
-    @Column(name="name", nullable = false)
+    @Column(name="NAME", nullable = false)
     private String name;
 
-    @Column(name="imageName", nullable = false)
+    @Column(name="IMAGE_NAME", nullable = false)
     private String imageName;
 
-    @Column(name="genre", nullable = false)
+    @Column(name="GENRE", nullable = false)
     private Genre genre;
 
-    @Column(name="blurb", nullable = false)
+    @Column(name="BLURB", nullable = false)
     private String blurb;
 
     @ManyToMany(mappedBy = "performers")

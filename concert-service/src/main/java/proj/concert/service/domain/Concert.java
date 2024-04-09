@@ -17,29 +17,29 @@ public class Concert{
     @GeneratedValue
     private Long id;
 
-    @Column(name="title", nullable = false)
+    @Column(name="TITLE", nullable = false)
     private String title;
 
-    @Column(name="imageName", nullable = false)
+    @Column(name="IMAGE_NAME", nullable = false)
     private String imageName;
 
-    @Column(name="blurb", nullable = false)
+    @Column(name="BLURB", nullable = false)
     private String blrb;
 
 
     @ElementCollection
-    @CollectionTable(name="concert_dates", joinColumns = @JoinColumn(name = "Concert_ID"))
-    @Column(name="concert_date")
+    @CollectionTable(name="CONCERT_DATES", joinColumns = @JoinColumn(name = "Concert_ID"))
+    @Column(name="DATE")
     private List<LocalDateTime> dates = new ArrayList<>();
 
 
     @ManyToMany(cascade = CascadeType.PERSIST)
     @JoinTable(
-            name = "concert_performer",
-            joinColumns = @JoinColumn(name = "concert_id"),
-            inverseJoinColumns = @JoinColumn(name = "performer_id")
+            name = "CONCERT_PERFORMER",
+            joinColumns = @JoinColumn(name = "CONCERT_ID"),
+            inverseJoinColumns = @JoinColumn(name = "PERFORMER_ID")
     )
-    private List<Performer> performers = new ArrayList<>();
+    private Set<Performer> performers = new HashSet<>();
 
     public Concert() {}
 
