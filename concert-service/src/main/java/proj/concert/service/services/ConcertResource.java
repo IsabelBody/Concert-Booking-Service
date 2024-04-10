@@ -4,8 +4,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.persistence.EntityManager;
+import javax.persistence.NoResultException;
+import javax.persistence.TypedQuery;
 import javax.ws.rs.*;
+import javax.ws.rs.core.Cookie;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.NewCookie;
 import javax.ws.rs.core.Response;
 
 import org.apache.commons.lang3.NotImplementedException;
@@ -13,9 +17,12 @@ import proj.concert.common.dto.BookingRequestDTO;
 import proj.concert.common.dto.ConcertInfoSubscriptionDTO;
 import proj.concert.common.dto.UserDTO;
 import proj.concert.common.types.BookingStatus;
+import proj.concert.service.domain.User;
 import proj.concert.service.jaxrs.LocalDateTimeParam;
 
-@Path("concert-service")
+import java.util.UUID;
+
+@Path("/concert-service")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class ConcertResource {
@@ -23,6 +30,39 @@ public class ConcertResource {
     // Use for debugging in console
     private static Logger LOGGER = LoggerFactory.getLogger(ConcertResource.class);
     private EntityManager em = PersistenceManager.instance().createEntityManager();
+
+    @POST
+    @Path("/login")
+    public Response loginUser(UserDTO credentials, @CookieParam("auth") Cookie clientId) {
+        // RETURN: Response with "auth" cookie
+
+        /* TESTS TO COVER:
+        - testFailedLogin_IncorrectUsername
+        - testFailedLogin_IncorrectPassword
+        - testSuccessfulLogin
+        */
+
+        try {
+            em.getTransaction().begin();
+            TypedQuery<User> userQuery = em.createQuery(
+                    "select u from User u where u.username = :username and u.password = :password", User.class)
+                       .setParameter("username", credentials.getUsername())
+                       .setParameter("password", credentials.getPassword());
+
+            User user = userQuery.getSingleResult();
+
+            em.getTransaction().commit();
+
+            NewCookie newCookie = makeCookie(clientId);
+            return Response.ok().cookie(newCookie).build();
+
+        } catch (NoResultException e) {
+            return Response.status(Response.Status.UNAUTHORIZED).build();
+        }
+        finally {
+            em.close();
+        }
+    }
 
     @GET
     @Path("/concerts/{id}")
@@ -98,20 +138,6 @@ public class ConcertResource {
         // List<Concert> concerts = new ArrayList<Concert>();
         // GenericEntity<List<Concert>> entity = new GenericEntity<List<Concert>>(concerts) {};
         // ResponseBuilder builder = Response.ok(entity);
-
-        throw new NotImplementedException();
-    }
-
-    @POST
-    @Path("/login")
-    public Response loginUser(UserDTO credentials) {
-        // RETURN: Response with "auth" cookie
-
-        /* TESTS TO COVER:
-        - testFailedLogin_IncorrectUsername
-        - testFailedLogin_IncorrectPassword
-        - testSuccessfulLogin
-        */
 
         throw new NotImplementedException();
     }
@@ -212,5 +238,29 @@ public class ConcertResource {
         */
 
         throw new NotImplementedException();
+    }
+
+    /**
+     * Helper method that can be called from every service method to generate a
+     * NewCookie instance, if necessary, based on the clientId parameter.
+     *
+     * @param clientId the Cookie whose name is Config.CLIENT_COOKIE, extracted
+     *                 from a HTTP request message. This can be null if there was no cookie
+     *                 named Config.CLIENT_COOKIE present in the HTTP request message.
+     * @return a NewCookie object, with a generated UUID value, if the clientId
+     * parameter is null. If the clientId parameter is non-null (i.e. the HTTP
+     * request message contained a cookie named Config.CLIENT_COOKIE), this
+     * method returns null as there's no need to return a NewCookie in the HTTP
+     * response message.
+     */
+    private NewCookie makeCookie(Cookie clientId) {
+        NewCookie newCookie = null;
+
+        if (clientId == null) {
+            newCookie = new NewCookie("auth", UUID.randomUUID().toString());
+            LOGGER.info("Generated cookie: " + newCookie.getValue());
+        }
+
+        return newCookie;
     }
 }
