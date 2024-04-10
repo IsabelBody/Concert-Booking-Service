@@ -36,7 +36,7 @@ public class ConcertResource {
     public Response loginUser(UserDTO credentials, @CookieParam("auth") Cookie clientId) {
         // RETURN: Response with "auth" cookie
 
-        /* TESTS TO COVER:
+        /* PASSING TESTS:
         - testFailedLogin_IncorrectUsername
         - testFailedLogin_IncorrectPassword
         - testSuccessfulLogin
