@@ -4,6 +4,9 @@ import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import javax.persistence.*;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Class to represent a User.
@@ -25,6 +28,10 @@ public class User {
 
     @Column(name = "VERSION")
     private Long version;
+
+    @OneToMany()
+    @JoinColumn(name="USER_ID", nullable=false)
+    private Set<Booking> bookings = new HashSet<>();
 
     public User() { }
 
@@ -71,6 +78,14 @@ public class User {
         this.version = version;
     }
 
+    public Set<Booking> getBookings() {
+        return Collections.unmodifiableSet(bookings);
+    }
+
+    public void addBooking(Booking booking) {
+        bookings.add(booking);
+    }
+
     @Override
     public String toString() {
         StringBuffer buffer = new StringBuffer();
@@ -96,13 +111,16 @@ public class User {
         User rhs = (User) obj;
         return new EqualsBuilder().
                 append(username, rhs.username).
+                append(password, rhs.password).
                 isEquals();
     }
 
     @Override
     public int hashCode() {
         return new HashCodeBuilder(17, 31).
-                append(username).hashCode();
+                append(username).
+                append(password).
+                hashCode();
     }
 
 }
