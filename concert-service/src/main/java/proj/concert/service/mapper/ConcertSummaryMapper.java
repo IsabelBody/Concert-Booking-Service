@@ -8,11 +8,11 @@ import proj.concert.service.domain.Concert;
 public class ConcertSummaryMapper {
 
     static Concert toDomainModel(proj.concert.common.dto.ConcertSummaryDTO dtoConcertSummary) {
-        Concert fullConcert = new Concert(
+        Concert fullConcertSummary = new Concert(
                 dtoConcertSummary.getId(),
                 dtoConcertSummary.getTitle(),
                 dtoConcertSummary.getImageName());
-        return fullConcert;
+        return fullConcertSummary;
     }
 
     static proj.concert.common.dto.ConcertSummaryDTO toDto(Concert concert) {

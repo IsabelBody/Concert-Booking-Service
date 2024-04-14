@@ -20,5 +20,4 @@ public class SeatMapper {
                             seat.getPrice());
             return dtoSeat;
         }
-    }
 }

@@ -1,7 +1,5 @@
 package proj.concert.service.mapper;
 
-import proj.concert.service.domain.Performer;
-
 public class PerformerMapper {
 
         static Performer toDomainModel(proj.concert.common.dto.PerformerDTO dtoPerformer) {
@@ -24,5 +22,4 @@ public class PerformerMapper {
                             performer.getBlurb());
             return dtoPerformer;
         }
-    }
 }
