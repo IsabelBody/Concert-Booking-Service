@@ -126,7 +126,7 @@ public class ConcertResource {
     }
 
     @GET
-    @Path("/concerts")
+    @Path("/performers")
     public Response getAllPerformers() {
         // RETURN: a List<PerformerDTO>
 
