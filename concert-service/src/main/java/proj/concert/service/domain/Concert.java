@@ -50,8 +50,8 @@ public class Concert{
         this.blrb = blurb;
     }
 
-    public Concert(String title, String imageName) {
-        this(null, title, imageName, null);
+    public Concert(Long id, String title, String imageName) {
+        this(id, title, imageName, null);
     }
 
     public Long getId() { return id; }
@@ -78,12 +78,12 @@ public class Concert{
         this.dates = dates;
     }
 
-    public List<Performer> getPerformers() {
-        return new ArrayList<>(performers);
+    public Set<Performer> getPerformers() {
+        return performers;
     }
 
     public void setPerformers(List<Performer> performers) {
-        this.performers = performers;
+        this.performers = (Set<Performer>) performers;
     }
 
     @Override
