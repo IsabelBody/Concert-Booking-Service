@@ -8,7 +8,7 @@ import proj.concert.common.dto.BookingDTO;
  */
 public class BookingMapper {
 
-    static Booking toDomainModel(BookingDTO dtoBooking) {
+    public static Booking toDomainModel(BookingDTO dtoBooking) {
         Booking fullBooking = new Booking(
                                     dtoBooking.getConcertId(),
                                     dtoBooking.getDate(),
@@ -16,7 +16,7 @@ public class BookingMapper {
         return fullBooking;
     }
 
-    static BookingDTO toDto(Booking booking) {
+    public static BookingDTO toDto(Booking booking) {
         BookingDTO dtoBooking = new BookingDTO(
                                     booking.getConcertId(),
                                     booking.getDate(),

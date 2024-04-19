@@ -8,7 +8,7 @@ import proj.concert.common.dto.ConcertSummaryDTO;
  */
 public class ConcertSummaryMapper {
 
-    static Concert toDomainModel(ConcertSummaryDTO dtoConcertSummary) {
+    public static Concert toDomainModel(ConcertSummaryDTO dtoConcertSummary) {
         Concert fullConcertSummary = new Concert(
                                     dtoConcertSummary.getId(),
                                     dtoConcertSummary.getTitle(),
@@ -16,7 +16,7 @@ public class ConcertSummaryMapper {
         return fullConcertSummary;
     }
 
-    static ConcertSummaryDTO toDto(Concert concert) {
+    public static ConcertSummaryDTO toDto(Concert concert) {
         ConcertSummaryDTO dtoConcertSummary = new ConcertSummaryDTO(
                                                 concert.getId(),
                                                 concert.getTitle(),

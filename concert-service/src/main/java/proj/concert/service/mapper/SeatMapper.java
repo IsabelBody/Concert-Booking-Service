@@ -7,14 +7,14 @@ import proj.concert.common.dto.SeatDTO;
  * Helper class to convert between domain-model and DTO objects representing Seats.
  */
 public class SeatMapper {
-        static Seat toDomainModel(SeatDTO dtoSeat) {
+        public static Seat toDomainModel(SeatDTO dtoSeat) {
             Seat fullSeat = new Seat(
                                 dtoSeat.getLabel(),
                                 dtoSeat.getPrice());
             return fullSeat;
         }
 
-        static SeatDTO toDto(Seat seat) {
+        public static SeatDTO toDto(Seat seat) {
             SeatDTO dtoSeat = new SeatDTO(
                                 seat.getLabel(),
                                 seat.getPrice());
