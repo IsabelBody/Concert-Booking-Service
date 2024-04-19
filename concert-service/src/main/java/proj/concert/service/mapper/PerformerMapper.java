@@ -1,25 +1,27 @@
 package proj.concert.service.mapper;
 
+import proj.concert.service.domain.Performer;
+import proj.concert.common.dto.PerformerDTO;
+
 public class PerformerMapper {
 
-        static Performer toDomainModel(proj.concert.common.dto.PerformerDTO dtoPerformer) {
+        static Performer toDomainModel(PerformerDTO dtoPerformer) {
             Performer fullPerformer = new Performer(
-                    dtoPerformer.getId(),
-                    dtoPerformer.getName(),
-                    dtoPerformer.getImageName(),
-                    dtoPerformer.getGenre(),
-                    dtoPerformer.getBlurb());
+                                        dtoPerformer.getId(),
+                                        dtoPerformer.getName(),
+                                        dtoPerformer.getImageName(),
+                                        dtoPerformer.getGenre(),
+                                        dtoPerformer.getBlurb());
             return fullPerformer;
         }
 
-        static proj.concert.common.dto.PerformerDTO toDto(Performer performer) {
-            proj.concert.common.dto.PerformerDTO dtoPerformer =
-                    new proj.concert.common.dto.PerformerDTO(
-                            performer.getId(),
-                            performer.getName(),
-                            performer.getImageName(),
-                            performer.getGenre(),
-                            performer.getBlurb());
+        static PerformerDTO toDto(Performer performer) {
+            PerformerDTO dtoPerformer = new PerformerDTO(
+                                            performer.getId(),
+                                            performer.getName(),
+                                            performer.getImageName(),
+                                            performer.getGenre(),
+                                            performer.getBlurb());
             return dtoPerformer;
         }
 }
