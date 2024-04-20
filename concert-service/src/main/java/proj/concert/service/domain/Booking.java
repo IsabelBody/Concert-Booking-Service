@@ -16,16 +16,11 @@ public class Booking {
 
 	@Id
 	@ManyToOne
-	@JoinColumn(name = "USER_ID")
-	private User user;
-
-	@Id
-	@ManyToOne
-	@JoinColumn(name = "CONCERT_ID")
+	@JoinColumn(name = "CONCERT_ID", nullable = false)
 	private Concert concert;
 
 	@Id
-	@Column(name = "DATE")
+	@Column(name = "DATE", nullable = false)
 	private LocalDateTime date;
 
 	@OneToMany(mappedBy = "BOOKING")
@@ -41,14 +36,6 @@ public class Booking {
 	}
 
 	// Getters & Setters
-	public User getUser() {
-		return user;
-	}
-
-	public void setUser(User user) {
-		this.user = user;
-	}
-
 	public Concert getConcert() {
 		return concert;
 	}

@@ -11,10 +11,10 @@ import java.util.Objects;
 public class Seat {
 
 	@Id
-	@Column(name = "LABEL")
+	@Column(name = "LABEL", nullable = false)
 	private String label;
 
-	@Column(name = "PRICE")
+	@Column(name = "PRICE", nullable = false)
 	private BigDecimal price;
 
 	@ManyToOne
