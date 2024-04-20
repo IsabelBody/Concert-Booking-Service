@@ -59,7 +59,7 @@ public class ConcertResource {
             NewCookie newCookie = makeCookie(clientId);
             return Response.ok().cookie(newCookie).build();
 
-        } catch (NoResultException e) {
+        } catch (Exception e) {
             return Response.status(Response.Status.UNAUTHORIZED).build();
         }
         finally {
