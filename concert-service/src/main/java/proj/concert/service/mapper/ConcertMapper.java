@@ -29,8 +29,10 @@ public class ConcertMapper {
                                     concert.getImageName(),
                                     concert.getBlurb());
 
+        // map concert's dates to dto's dates list
         dtoConcert.getDates().addAll(concert.getDates());
 
+        // map concert's performers to dto's performers list
         List<PerformerDTO> performers = new ArrayList<>();
         concert.getPerformers().forEach(performer -> performers.add(PerformerMapper.toDto(performer)));
         dtoConcert.setPerformers(performers);
