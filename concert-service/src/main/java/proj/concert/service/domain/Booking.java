@@ -11,35 +11,30 @@ import java.util.Objects;
 
 
 @Entity
-@IdClass(BookingKey.class)
 @Table(name = "BOOKING")
 public class Booking {
 
-	// primary key 1
 	@Id
 	@ManyToOne
-	@JoinColumn(name = "USER_ID", referencedColumnName = "ID") // foreign key. is this done correctly?
+	@JoinColumn(name = "USER_ID")
 	private User user;
 
-	// primary key 2
 	@Id
-	@ManyToOne // TODO: Is this the right relationship?
+	@ManyToOne
 	@JoinColumn(name = "CONCERT_ID")
-	private Concert concert; // will give error until jason implements his class.
+	private Concert concert;
 
-	// primary key 3
 	@Id
-	@Column(name = "date")
+	@Column(name = "DATE")
 	private LocalDateTime date;
 
-	@OneToMany(fetch = FetchType.EAGER, mappedBy = "booking")
+	@OneToMany(mappedBy = "BOOKING")
 	private List<Seat> seats = new ArrayList<>();
 
 	// default constructor
 	public Booking() { }
 
-	public Booking(Concert concert, LocalDateTime date, List<Seat> seats, User user) {
-		this.user = user;
+	public Booking(Concert concert, LocalDateTime date, List<Seat> seats) {
 		this.concert = concert;
 		this.date = date;
 		this.seats = seats;
@@ -84,8 +79,7 @@ public class Booking {
 		if (this == o) return true;
 		if (o == null || getClass() != o.getClass()) return false;
 		Booking booking = (Booking) o;
-		return Objects.equals(user, booking.user) &&
-				Objects.equals(concert, booking.concert) &&
+		return	Objects.equals(concert, booking.concert) &&
 				Objects.equals(date, booking.date) &&
 				Objects.equals(seats, booking.seats);
 	}
@@ -93,7 +87,6 @@ public class Booking {
 	@Override
 	public int hashCode() {
 		return new HashCodeBuilder(17, 31)
-				.append(user)
 				.append(concert)
 				.append(date)
 				.append(seats)
