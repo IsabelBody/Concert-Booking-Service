@@ -9,7 +9,6 @@ import java.util.Objects;
 @Entity
 @Table(name = "SEATS")
 public class Seat {
-
 	@Id
 	@Column(name = "LABEL", nullable = false)
 	private String label;
@@ -30,9 +29,7 @@ public class Seat {
 
 	// getters and setters
 
-	public String getLabel() {
-		return label;
-	}
+	public String getLabel() { return label; }
 
 	public void setLabel(String label) {
 		this.label = label;

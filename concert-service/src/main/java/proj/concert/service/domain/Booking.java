@@ -15,15 +15,16 @@ import java.util.Objects;
 public class Booking {
 
 	@Id
+	// unique identification is not necessary as booking entity is created
+	// in the database but will cause JPA error if no Id.
 	@ManyToOne
 	@JoinColumn(name = "CONCERT_ID", nullable = false)
 	private Concert concert;
 
-	@Id
 	@Column(name = "DATE", nullable = false)
 	private LocalDateTime date;
 
-	@OneToMany(mappedBy = "BOOKING")
+	@OneToMany(mappedBy = "booking")
 	private List<Seat> seats = new ArrayList<>();
 
 	// default constructor
