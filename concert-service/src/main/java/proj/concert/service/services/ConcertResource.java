@@ -1,7 +1,5 @@
 package proj.concert.service.services;
 
-<<<<<<< Updated upstream
-=======
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,18 +22,19 @@ import proj.concert.service.domain.User;
 import proj.concert.service.jaxrs.LocalDateTimeParam;
 
 import java.net.URI;
+
 import java.util.UUID;
 
 @Path("/concert-service")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
->>>>>>> Stashed changes
+
 public class ConcertResource {
 
-    // TODO Implement this.
+    // Use for debugging in console
+    private static Logger LOGGER = LoggerFactory.getLogger(ConcertResource.class);
+    private EntityManager em = PersistenceManager.instance().createEntityManager();
 
-<<<<<<< Updated upstream
-=======
     @POST
     @Path("/login")
     public Response loginUser(UserDTO credentials, @CookieParam("auth") Cookie clientId) {
@@ -61,7 +60,7 @@ public class ConcertResource {
             NewCookie newCookie = makeCookie(clientId);
             return Response.ok().cookie(newCookie).build();
 
-        } catch (NoResultException e) {
+        } catch (Exception e) {
             return Response.status(Response.Status.UNAUTHORIZED).build();
         }
         finally {
@@ -164,58 +163,6 @@ public class ConcertResource {
 
         throw new NotImplementedException();
     }
-
-    @POST
-    @Path("/bookings")
-    public Response createBooking(BookingRequestDTO request, @CookieParam("auth") Cookie authCookie) {
-
-        // user must be logged in to make a booking.
-        if (authCookie == null) {
-            // User is not authenticated
-            return Response.status(Response.Status.UNAUTHORIZED).build();
-        }
-
-        // get user object from database using auth cookie, so that we can
-        // attach booking to that user object
-
-
-
-        TypedQuery<User> userQuery = em.createQuery(
-                        "select u from User u where u.authToken = :authToken", User.class)
-                .setParameter("authToken", authCookie.getValue());
-        User user;
-        try {
-            user = userQuery.getSingleResult();
-        } catch (NoResultException e) {
-            // Auth token is not valid
-            return Response.status(Response.Status.UNAUTHORIZED).build();
-        }
-
-        // Retrieve the concert from the database using the concertId from the request
-        TypedQuery<Concert> concertQuery = em.createQuery(
-                        "select c from Concert c where c.id = :concertId", Concert.class)
-                .setParameter("concertId", request.getConcertId());
-        Concert concert;
-        try {
-            concert = concertQuery.getSingleResult();
-        } catch (NoResultException e) {
-            // Concert does not exist
-            return Response.status(Response.Status.BAD_REQUEST).build();
-        }
-
-        // create the booking object
-        Booking booking = new Booking(user, concert, request.getDate(), request.getSeatLabels());
-
-        // add booking object to database
-        em.getTransaction().begin();
-        em.persist(booking);
-        em.getTransaction().commit();
-
-        // Return the location of the new booking in the response header
-        return Response.created(URI.create("/bookings/" + booking.getId())).build();
-    }
-
-
 
     @GET
     @Path("/bookings")
@@ -320,5 +267,4 @@ public class ConcertResource {
 
         return newCookie;
     }
->>>>>>> Stashed changes
 }
