@@ -69,7 +69,6 @@ public class Concert{
     public String getBlurb() { return blrb; }
 
     public void setBlurb( String blurb) { this.blrb = blurb; }
-  main
 
     public Set<LocalDateTime> getDates() {
         return new HashSet<>(dates);

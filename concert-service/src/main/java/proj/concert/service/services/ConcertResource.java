@@ -17,11 +17,8 @@ import proj.concert.common.dto.BookingRequestDTO;
 import proj.concert.common.dto.ConcertInfoSubscriptionDTO;
 import proj.concert.common.dto.UserDTO;
 import proj.concert.common.types.BookingStatus;
-import proj.concert.service.domain.Concert;
 import proj.concert.service.domain.User;
 import proj.concert.service.jaxrs.LocalDateTimeParam;
-
-import java.net.URI;
 
 import java.util.UUID;
 
