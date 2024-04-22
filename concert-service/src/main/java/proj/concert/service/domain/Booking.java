@@ -3,20 +3,17 @@ package proj.concert.service.domain;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import java.time.LocalDateTime;
-
-import javax.persistence.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import javax.persistence.*;
 
 @Entity
 @Table(name = "BOOKING")
 public class Booking {
 
 	@Id
-	// unique identification is not necessary as booking entity is created
-	// in the database but will cause JPA error if no Id.
 	@ManyToOne
 	@JoinColumn(name = "CONCERT_ID", nullable = false)
 	private Concert concert;
@@ -27,13 +24,19 @@ public class Booking {
 	@OneToMany(mappedBy = "booking")
 	private List<Seat> seats = new ArrayList<>();
 
-	// default constructor
-	public Booking() { }
+	@ManyToOne
+	@JoinColumn(name = "USER_ID", nullable = false)
+	private User user;
 
-	public Booking(Concert concert, LocalDateTime date, List<Seat> seats) {
+	public Booking() {
+		// Default constructor
+	}
+
+	public Booking(Concert concert, LocalDateTime date, List<Seat> seats, User user) {
 		this.concert = concert;
 		this.date = date;
 		this.seats = seats;
+		this.user = user;
 	}
 
 	// Getters & Setters
@@ -45,12 +48,12 @@ public class Booking {
 		this.concert = concert;
 	}
 
-	public void setDate(LocalDateTime date) {
-		this.date = date;
-	}
-
 	public LocalDateTime getDate() {
 		return date;
+	}
+
+	public void setDate(LocalDateTime date) {
+		this.date = date;
 	}
 
 	public List<Seat> getSeats() {
@@ -61,15 +64,24 @@ public class Booking {
 		this.seats = seats;
 	}
 
-	// other methods
+	public User getUser() {
+		return user;
+	}
+
+	public void setUser(User user) {
+		this.user = user;
+	}
+
+	// Other methods
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) return true;
 		if (o == null || getClass() != o.getClass()) return false;
 		Booking booking = (Booking) o;
-		return	Objects.equals(concert, booking.concert) &&
+		return Objects.equals(concert, booking.concert) &&
 				Objects.equals(date, booking.date) &&
-				Objects.equals(seats, booking.seats);
+				Objects.equals(seats, booking.seats) &&
+				Objects.equals(user, booking.user);
 	}
 
 	@Override
@@ -78,6 +90,7 @@ public class Booking {
 				.append(concert)
 				.append(date)
 				.append(seats)
+				.append(user)
 				.toHashCode();
 	}
 }
