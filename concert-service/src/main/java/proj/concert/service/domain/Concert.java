@@ -7,7 +7,6 @@ import javax.persistence.*;
 
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
-import proj.concert.common.dto.PerformerDTO;
 
 @Entity
 @Table(name="CONCERTS")
@@ -23,15 +22,13 @@ public class Concert{
     @Column(name="IMAGE_NAME", nullable = false)
     private String imageName;
 
-    @Column(name="BLURB", nullable = false)
+    @Column(name="BLURB", columnDefinition="TEXT", nullable = false)
     private String blrb;
 
-
     @ElementCollection
-    @CollectionTable(name="CONCERT_DATES", joinColumns = @JoinColumn(name = "Concert_ID"))
+    @CollectionTable(name="CONCERT_DATES", joinColumns = @JoinColumn(name = "CONCERT_ID"))
     @Column(name="DATE")
-    private List<LocalDateTime> dates = new ArrayList<>();
-
+    private Set<LocalDateTime> dates = new HashSet<>();
 
     @ManyToMany(cascade = CascadeType.PERSIST)
     @JoinTable(
@@ -71,10 +68,10 @@ public class Concert{
     public void setBlurb( String blurb) { this.blrb = blurb; }
 
     public Set<LocalDateTime> getDates() {
-        return new HashSet<>(dates);
+        return dates;
     }
 
-    public void setDates(List<LocalDateTime> dates) {
+    public void setDates(Set<LocalDateTime> dates) {
         this.dates = dates;
     }
 
@@ -82,8 +79,8 @@ public class Concert{
         return performers;
     }
 
-    public void setPerformers(List<Performer> performers) {
-        this.performers = (Set<Performer>) performers;
+    public void setPerformers(Set<Performer> performers) {
+        this.performers = performers;
     }
 
     @Override

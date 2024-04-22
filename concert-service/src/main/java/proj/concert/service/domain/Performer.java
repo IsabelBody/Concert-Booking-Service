@@ -23,13 +23,14 @@ public class Performer {
     private String imageName;
 
     @Column(name="GENRE", nullable = false)
+    @Enumerated(EnumType.STRING)
     private Genre genre;
 
-    @Column(name="BLURB", nullable = false)
+    @Column(name="BLURB", columnDefinition="TEXT", nullable = false)
     private String blurb;
 
     @ManyToMany(mappedBy = "performers")
-    private List<Concert> concerts = new ArrayList<>();
+    private Set<Concert> concerts = new HashSet<>();
 
     public Performer() {
     }
