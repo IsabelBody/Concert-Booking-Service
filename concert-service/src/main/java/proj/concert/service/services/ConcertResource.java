@@ -28,6 +28,7 @@ import java.util.UUID;
 @Path("/concert-service")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
+
 public class ConcertResource {
 
     // Use for debugging in console
