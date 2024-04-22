@@ -14,11 +14,14 @@ import javax.ws.rs.core.Response;
 
 import org.apache.commons.lang3.NotImplementedException;
 import proj.concert.common.dto.BookingRequestDTO;
+import proj.concert.common.dto.ConcertDTO;
 import proj.concert.common.dto.ConcertInfoSubscriptionDTO;
 import proj.concert.common.dto.UserDTO;
 import proj.concert.common.types.BookingStatus;
+import proj.concert.service.domain.Concert;
 import proj.concert.service.domain.User;
 import proj.concert.service.jaxrs.LocalDateTimeParam;
+import proj.concert.service.mapper.ConcertMapper;
 
 import java.util.UUID;
 
@@ -75,7 +78,21 @@ public class ConcertResource {
         - testGetNonExistentConcert
         */
 
-        throw new NotImplementedException();
+        try {
+            em.getTransaction().begin();
+            Concert concert = em.find(Concert.class, id);
+            em.getTransaction().commit();
+
+            if (concert != null) {
+                ConcertDTO dtoConcert = ConcertMapper.toDto(concert);
+                return Response.ok(dtoConcert).build();
+            } else {
+                return Response.status(Response.Status.NOT_FOUND).build();
+            }
+        }
+        finally {
+            em.close();
+        }
     }
 
     @GET
