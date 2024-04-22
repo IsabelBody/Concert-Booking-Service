@@ -10,6 +10,10 @@ import proj.concert.common.types.BookingStatus;
 @Table(name = "SEATS")
 public class Seat {
 	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	@Column(name = "ID")
+	private Long id;
+
 	@Column(name = "LABEL", nullable = false)
 	private String label;
 

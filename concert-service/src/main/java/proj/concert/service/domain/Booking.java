@@ -12,8 +12,12 @@ import javax.persistence.*;
 @Entity
 @Table(name = "BOOKING")
 public class Booking {
-
 	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	@Column(name = "ID")
+	private Long id;
+
+
 	@ManyToOne
 	@JoinColumn(name = "CONCERT_ID", nullable = false)
 	private Concert concert;
