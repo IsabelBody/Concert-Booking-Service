@@ -23,11 +23,11 @@ public class Booking {
 	@Column(name = "DATE", nullable = false)
 	private LocalDateTime date;
 
-	@OneToMany(mappedBy = "booking")
+	@OneToMany()
 	private List<Seat> seats = new ArrayList<>();
 
 	@ManyToOne
-	@JoinColumn(name = "USER_ID", nullable = false)
+	@JoinColumn(name = "USER", nullable = false)
 	private User user;
 
 	public Booking() {
