@@ -29,8 +29,7 @@ public class User {
     @Column(name = "VERSION")
     private Long version;
 
-    @OneToMany()
-    @JoinColumn(name="USER_ID", nullable=false)
+    @OneToMany(mappedBy = "user")
     private Set<Booking> bookings = new HashSet<>();
 
     public User() { }
