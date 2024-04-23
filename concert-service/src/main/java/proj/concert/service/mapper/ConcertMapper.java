@@ -13,15 +13,6 @@ import java.util.List;
  */
 public class ConcertMapper {
 
-    public static Concert toDomainModel(ConcertDTO dtoConcert) {
-        Concert fullConcert = new Concert(
-                                    dtoConcert.getId(),
-                                    dtoConcert.getTitle(),
-                                    dtoConcert.getImageName(),
-                                    dtoConcert.getBlurb());
-        return fullConcert;
-    }
-
     public static ConcertDTO toDto(Concert concert) {
         ConcertDTO dtoConcert = new ConcertDTO(
                                     concert.getId(),

@@ -8,14 +8,6 @@ import proj.concert.common.dto.ConcertSummaryDTO;
  */
 public class ConcertSummaryMapper {
 
-    public static Concert toDomainModel(ConcertSummaryDTO dtoConcertSummary) {
-        Concert fullConcertSummary = new Concert(
-                                    dtoConcertSummary.getId(),
-                                    dtoConcertSummary.getTitle(),
-                                    dtoConcertSummary.getImageName());
-        return fullConcertSummary;
-    }
-
     public static ConcertSummaryDTO toDto(Concert concert) {
         ConcertSummaryDTO dtoConcertSummary = new ConcertSummaryDTO(
                                                 concert.getId(),
