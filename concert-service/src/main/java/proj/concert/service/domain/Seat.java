@@ -3,6 +3,7 @@ package proj.concert.service.domain;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import javax.persistence.*;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.Objects;
 import proj.concert.common.types.BookingStatus;
 
@@ -24,16 +25,30 @@ public class Seat {
 	@Enumerated(EnumType.STRING)
 	private BookingStatus isBooked;
 
+	@Column(name = "DATE")
+	private LocalDateTime date;
+
 	public Seat() {
 	}
 
-	public Seat(String label, BigDecimal price, BookingStatus isBooked) {
+	public Seat(String label, BigDecimal price) {
 		this.label = label;
 		this.price = price;
+	}
+
+	public Seat(String label, BookingStatus isBooked, LocalDateTime date, BigDecimal price) {
+		this.label = label;
 		this.isBooked = isBooked;
+		this.date = date;
+		this.price = price;
 	}
 
 	// Getters and setters
+
+	public long getId() { return id; }
+
+	public void setId(long id) { this.id = id; }
+
 	public String getLabel() {
 		return label;
 	}
@@ -57,6 +72,10 @@ public class Seat {
 	public void setIsBooked(BookingStatus isBooked) {
 		this.isBooked = isBooked;
 	}
+
+	public LocalDateTime getDate() { return date; }
+
+	public void setDate(LocalDateTime date) { this.date = date; }
 
 	// Equals and hashCode methods
 	@Override
