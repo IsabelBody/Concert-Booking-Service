@@ -17,10 +17,8 @@ public class Booking {
 	@Column(name = "ID")
 	private Long id;
 
-
-	@ManyToOne
 	@JoinColumn(name = "CONCERT_ID", nullable = false)
-	private Concert concert;
+	private long concertId;
 
 	@Column(name = "DATE", nullable = false)
 	private LocalDateTime date;
@@ -36,20 +34,19 @@ public class Booking {
 		// Default constructor
 	}
 
-	public Booking(Concert concert, LocalDateTime date, List<Seat> seats, User user) {
-		this.concert = concert;
+	public Booking(long concertId, LocalDateTime date, List<Seat> seats) {
+		this.concertId = concertId;
 		this.date = date;
 		this.seats = seats;
-		this.user = user;
 	}
 
 	// Getters & Setters
-	public Concert getConcert() {
-		return concert;
+	public long getConcertId() {
+		return concertId;
 	}
 
-	public void setConcert(Concert concert) {
-		this.concert = concert;
+	public void setConcertId(long concertId) {
+		this.concertId = concertId;
 	}
 
 	public LocalDateTime getDate() {
@@ -60,9 +57,7 @@ public class Booking {
 		this.date = date;
 	}
 
-	public List<Seat> getSeats() {
-		return seats;
-	}
+	public List<Seat> getSeats() { return seats; }
 
 	public void setSeats(List<Seat> seats) {
 		this.seats = seats;
@@ -71,6 +66,7 @@ public class Booking {
 	public User getUser() {
 		return user;
 	}
+
 
 	public void setUser(User user) {
 		this.user = user;
@@ -82,7 +78,7 @@ public class Booking {
 		if (this == o) return true;
 		if (o == null || getClass() != o.getClass()) return false;
 		Booking booking = (Booking) o;
-		return Objects.equals(concert, booking.concert) &&
+		return Objects.equals(concertId, booking.concertId) &&
 				Objects.equals(date, booking.date) &&
 				Objects.equals(seats, booking.seats) &&
 				Objects.equals(user, booking.user);
@@ -91,7 +87,7 @@ public class Booking {
 	@Override
 	public int hashCode() {
 		return new HashCodeBuilder(17, 31)
-				.append(concert)
+				.append(concertId)
 				.append(date)
 				.append(seats)
 				.append(user)
