@@ -161,7 +161,7 @@ public class ConcertResource {
 
     @POST
     @Path("/bookings")
-    public Response createBooking(BookingRequestDTO request) {
+    public Response createBooking(BookingRequestDTO request, @CookieParam("auth") Cookie clientCookie) {
         // RETURN: Response with Location header in the form of "/bookings/{id}" if authenticated,
         //         otherwise, return Response object with status code
 
@@ -179,7 +179,7 @@ public class ConcertResource {
 
     @GET
     @Path("/bookings")
-    public Response getAllBookingsForUser() {
+    public Response getAllBookingsForUser(@CookieParam("auth") Cookie clientCookie) {
         // RETURN: a List<BookingDTO>
         //         or if not authenticated, just the Response object with status code
 
@@ -198,7 +198,7 @@ public class ConcertResource {
 
     @GET
     @Path("/bookings/{id}")
-    public Response getBookingById(@PathParam("id") long id) {
+    public Response getBookingById(@PathParam("id") long id, @CookieParam("auth") Cookie clientCookie) {
         // RETURN: a BookingDTO instance if the booking is owned by the user,
         //         otherwise, just a Response object with status code
 
@@ -256,6 +256,41 @@ public class ConcertResource {
 
         throw new NotImplementedException();
     }
+
+
+    /**
+     * Helper method that gets a User object based on provided token.
+     *
+     * @param clientCookie the Cookie whose name auth, extracted from a HTTP request message.
+     *                     This can be null if there was no cookie in the request message.
+     *
+     * @return a User object that has the associated token. If there is no token,
+     *         or no user can be found, return null.
+     */
+    private User getAuthenticatedUser(Cookie clientCookie) {
+        User user = null;
+
+        if (clientCookie != null) {
+            // try to get the user the token is associated to
+            try {
+                em.getTransaction().begin();
+                user = em.createQuery(
+                                "select u from User u where u.token = :token", User.class)
+                        .setParameter("token", clientCookie.getValue())
+                        .getSingleResult();
+
+                em.getTransaction().commit();
+
+            } catch (Exception ignored) {}
+            finally {
+                if (em != null && em.isOpen())
+                    em.close();
+            }
+        }
+
+        return user;
+    }
+
 
     /**
      * Helper method that generates a NewCookie instance, if necessary.
