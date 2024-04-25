@@ -49,19 +49,37 @@ public class ConcertResource {
         try {
             em.getTransaction().begin();
             User user = em.createQuery(
-                    "select u from User u where u.username = :username and u.password = :password", User.class)
+                            "select u from User u where u.username = :username and u.password = :password", User.class)
                     .setParameter("username", credentials.getUsername())
                     .setParameter("password", credentials.getPassword())
                     .getSingleResult();
 
-            em.getTransaction().commit();
+            // Create cookie token
+            NewCookie cookie = null;
+            if (clientCookie == null) {
+                String newToken = UUID.randomUUID().toString();
+                cookie = new NewCookie("auth", newToken);
+                user.setToken(newToken);
 
-            return Response.ok().cookie(makeCookie(user, clientCookie)).build();
+                // save token in database
+                em.persist(user);
+                em.getTransaction().commit();
+            } else {
+                cookie = new NewCookie("auth", user.getToken());
+            }
+
+            // 2nd option: create a new cookie every time the user logs in
+            // String newToken = UUID.randomUUID().toString();
+            // NewCookie cookie = new NewCookie("auth", newToken);
+            // user.setToken(newToken);
+            // em.persist(user);
+            // em.getTransaction().commit();
+
+            return Response.ok().cookie(cookie).build();
 
         } catch (Exception e) {
             return Response.status(Response.Status.UNAUTHORIZED).build();
-        }
-        finally {
+        } finally {
             if (em != null && em.isOpen())
                 em.close();
         }
@@ -285,49 +303,19 @@ public class ConcertResource {
                         .setParameter("token", clientCookie.getValue())
                         .getSingleResult();
 
+                LOGGER.info("user's token: " + user.getToken());
+                LOGGER.info("user's username: " + user.getUsername());
+
                 em.getTransaction().commit();
 
-            } catch (Exception ignored) {}
-            finally {
+            } catch (Exception e) {
+                LOGGER.info("an error occured" + e.getClass().getCanonicalName());
+            } finally {
                 if (em != null && em.isOpen())
                     em.close();
             }
         }
 
         return user;
-    }
-
-
-    /**
-     * Helper method that generates a NewCookie instance, if necessary.
-     *
-     * @param clientCookie the Cookie whose name auth, extracted
-     *                 from a HTTP request message. This can be null if
-     *                 there was no cookie in the request message.
-     *
-     * @return a NewCookie object, with a generated UUID value, if the clientId
-     * parameter is null. If the request message contained a cookie named auth, this
-     * method returns null as there's no need to return a NewCookie.
-     */
-    private NewCookie makeCookie(User user, Cookie clientCookie) {
-        // 1st option: create a new cookie ONLY when no token is already present
-        NewCookie newCookie = new NewCookie("auth", user.getToken());
-
-        if (clientCookie == null) {
-            String newToken = UUID.randomUUID().toString();
-            newCookie = new NewCookie("auth", newToken);
-            user.setToken(newToken);
-        }
-
-        return newCookie;
-
-        // 2nd option: create a new cookie every time the user logs in
-
-        // String newToken = UUID.randomUUID().toString();
-        // NewCookie newCookie = new NewCookie("auth", newToken);
-        // user.setToken(newToken);
-        //
-        // return newCookie;
-
     }
 }
