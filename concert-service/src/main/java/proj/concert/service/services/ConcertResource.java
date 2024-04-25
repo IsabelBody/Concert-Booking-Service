@@ -241,7 +241,7 @@ public class ConcertResource {
 
     @POST
     @Path("/subscribe/concertInfo")
-    public Response createSubscription(ConcertInfoSubscriptionDTO request) {
+    public Response createSubscription(ConcertInfoSubscriptionDTO request, @CookieParam("auth") Cookie clientCookie) {
         // RETURN: a ConcertInfoNotificationDTO instance,
         //         otherwise, a Response object with status code
 
@@ -254,7 +254,13 @@ public class ConcertResource {
         - testBadSubscription_NonexistentDate
         */
 
-        throw new NotImplementedException();
+        User user = getAuthenticatedUser(clientCookie);
+
+        if (user == null) {
+            return Response.status(Response.Status.UNAUTHORIZED).build();
+        }
+
+        return null;
     }
 
 
