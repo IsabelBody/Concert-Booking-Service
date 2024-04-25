@@ -4,26 +4,32 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.persistence.EntityManager;
+import javax.persistence.EntityTransaction;
 import javax.persistence.NoResultException;
 import javax.persistence.TypedQuery;
 import javax.ws.rs.*;
-import javax.ws.rs.core.Cookie;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.NewCookie;
-import javax.ws.rs.core.Response;
+import javax.ws.rs.core.*;
 
 import org.apache.commons.lang3.NotImplementedException;
-import proj.concert.common.dto.BookingRequestDTO;
-import proj.concert.common.dto.ConcertDTO;
-import proj.concert.common.dto.ConcertInfoSubscriptionDTO;
-import proj.concert.common.dto.UserDTO;
+import proj.concert.common.dto.*;
 import proj.concert.common.types.BookingStatus;
+import proj.concert.service.domain.Booking;
 import proj.concert.service.domain.Concert;
+import proj.concert.service.domain.Seat;
 import proj.concert.service.domain.User;
 import proj.concert.service.jaxrs.LocalDateTimeParam;
+import proj.concert.service.mapper.BookingMapper;
 import proj.concert.service.mapper.ConcertMapper;
+import proj.concert.service.mapper.SeatMapper;
+
+import java.math.BigDecimal;
+import java.net.URI;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Path("/concert-service")
 @Produces(MediaType.APPLICATION_JSON)
@@ -159,6 +165,7 @@ public class ConcertResource {
         throw new NotImplementedException();
     }
 
+
     @POST
     @Path("/bookings")
     public Response createBooking(BookingRequestDTO request, @CookieParam("auth") Cookie clientCookie) {
@@ -174,8 +181,77 @@ public class ConcertResource {
         - testAttemptDoubleBooking_OverlappingSeats
         */
 
-        throw new NotImplementedException();
+        User user = getAuthenticatedUser(clientCookie);
+        // check user is authenticated
+
+        if (user == null) {
+            return Response.status(Response.Status.UNAUTHORIZED).build();
+        }
+
+        EntityTransaction transaction = em.getTransaction();
+        transaction.begin();
+
+        try {
+
+            // Check if the concert exists
+            Concert concert = em.find(Concert.class, request.getConcertId());
+            if (concert == null) {
+                return Response.status(Response.Status.BAD_REQUEST).build();
+            }
+
+            // check date exists
+            if (!concert.getDates().contains(request.getDate())) {
+                return Response.status(Response.Status.BAD_REQUEST).build();
+            }
+
+
+            // TODO: Getting seats should actually be done by getSeats()
+
+            // changing request from list of seat labels into list of seats
+            // querying the database
+            List<Seat> requestedSeats = em.createQuery("select s from Seat s where s.label in :seatLabels and s.date = :concertDate", Seat.class)
+                    .setParameter("seatLabels", request.getSeatLabels())
+                    .setParameter("concertDate", request.getDate())
+                    .getResultList();
+
+            // Check if the requested seats are available
+            for (Seat seat : requestedSeats) {
+                // if any seat is already booked, user is not allowed to book.
+                if (seat.getIsBooked()) {
+                    return Response.status(Response.Status.FORBIDDEN).build();
+                } else {
+                    seat.setIsBooked(true);
+                    em.merge(seat);
+                }
+            }
+
+            // Create the booking
+            Booking booking = new Booking(request.getConcertId(), request.getDate(), requestedSeats);
+            booking.setUser(user);
+
+
+            em.persist(booking);
+            transaction.commit();
+
+
+            // TODO: add notification method call here?
+
+            URI location = new URI("/bookings/" + booking.getId());
+            return Response.created(location).build();
+
+        } catch (Exception e) {
+            if (transaction.isActive()) {
+                transaction.rollback();
+            }
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
+        } finally {
+            if (em != null && em.isOpen()) {
+                em.close();
+            }
+        }
     }
+
+
 
     @GET
     @Path("/bookings")
@@ -196,19 +272,48 @@ public class ConcertResource {
         throw new NotImplementedException();
     }
 
+
     @GET
     @Path("/bookings/{id}")
     public Response getBookingById(@PathParam("id") long id, @CookieParam("auth") Cookie clientCookie) {
         // RETURN: a BookingDTO instance if the booking is owned by the user,
         //         otherwise, just a Response object with status code
 
-        /* TESTS TO COVER:
-        - testGetOwnBookingById
-        - testAttemptGetOthersBookingById
-        */
+    /* TESTS TO COVER:
+    - testGetOwnBookingById
+    - testAttemptGetOthersBookingById
+    */
 
-        throw new NotImplementedException();
+        User user = getAuthenticatedUser(clientCookie);
+
+        // Checking if user is authenticated
+        if (user == null) {
+            return Response.status(Response.Status.UNAUTHORIZED).build();
+        }
+
+        try {
+            em.getTransaction().begin();
+            Booking booking = em.find(Booking.class, id);
+            em.getTransaction().commit();
+
+            if (booking != null) {
+                if (!booking.getUser().equals(user)) {
+                    // The booking is not owned by the authenticated user
+                    return Response.status(Response.Status.FORBIDDEN).build();
+                }
+                BookingDTO dtoBooking = BookingMapper.toDto(booking);
+                return Response.ok(dtoBooking).build(); // success
+            } else {
+                // booking is not found
+                return Response.status(Response.Status.NOT_FOUND).build();
+            }
+        }
+        finally {
+            em.close();
+        }
     }
+
+
 
     @GET
     @Path("/seats/{date}")
@@ -235,6 +340,8 @@ public class ConcertResource {
         // List<Concert> concerts = new ArrayList<Concert>();
         // GenericEntity<List<Concert>> entity = new GenericEntity<List<Concert>>(concerts) {};
         // ResponseBuilder builder = Response.ok(entity);
+
+
 
         throw new NotImplementedException();
     }
@@ -272,6 +379,7 @@ public class ConcertResource {
 
         if (clientCookie != null) {
             // try to get the user the token is associated to
+
             try {
                 em.getTransaction().begin();
                 user = em.createQuery(
@@ -279,10 +387,14 @@ public class ConcertResource {
                         .setParameter("token", clientCookie.getValue())
                         .getSingleResult();
 
+                LOGGER.info("user's token: " + user.getToken());
+                LOGGER.info("user's username: " + user.getUsername());
+
                 em.getTransaction().commit();
 
-            } catch (Exception ignored) {}
-            finally {
+            } catch (Exception e) {
+                LOGGER.info("an error occured" + e.getClass().getCanonicalName());
+            } finally {
                 if (em != null && em.isOpen())
                     em.close();
             }
@@ -290,6 +402,7 @@ public class ConcertResource {
 
         return user;
     }
+
 
 
     /**
@@ -305,6 +418,8 @@ public class ConcertResource {
      */
     private NewCookie makeCookie(User user, Cookie clientCookie) {
         // 1st option: create a new cookie ONLY when no token is already present
+
+        /*
         NewCookie newCookie = new NewCookie("auth", user.getToken());
 
         if (clientCookie == null) {
@@ -315,13 +430,19 @@ public class ConcertResource {
 
         return newCookie;
 
+         */
+
         // 2nd option: create a new cookie every time the user logs in
 
-        // String newToken = UUID.randomUUID().toString();
-        // NewCookie newCookie = new NewCookie("auth", newToken);
-        // user.setToken(newToken);
-        //
-        // return newCookie;
+        String newToken = UUID.randomUUID().toString();
+        NewCookie newCookie = new NewCookie("auth", newToken);
+        user.setToken(newToken);
+
+        return newCookie;
 
     }
+
 }
+
+
+
