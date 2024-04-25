@@ -7,6 +7,7 @@ import javax.persistence.*;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * Class to represent a User.
@@ -31,6 +32,9 @@ public class User {
 
     @OneToMany(mappedBy = "user")
     private Set<Booking> bookings = new HashSet<>();
+
+    @Column(name = "TOKEN")
+    private String token;
 
     public User() { }
 
@@ -84,6 +88,10 @@ public class User {
     public void addBooking(Booking booking) {
         bookings.add(booking);
     }
+
+    public void setToken(String token) {this.token = token; }
+
+    public String getToken() { return token; }
 
     @Override
     public String toString() {
