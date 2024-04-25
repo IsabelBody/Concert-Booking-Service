@@ -276,6 +276,22 @@ public class ConcertResource {
 
         if (user == null) {
             return Response.status(Response.Status.UNAUTHORIZED).build();
+        } else {
+            try {
+                em.getTransaction().begin();
+                Concert concert = em.createQuery(
+                                "select c from Concert c where c.id = :id and :date member of c.dates", Concert.class)
+                                   .setParameter("id", request.getConcertId())
+                                   .setParameter("date", request.getDate())
+                                   .getSingleResult();
+
+                em.getTransaction().commit();
+
+            } catch (Exception e) {
+                return Response.status(Response.Status.BAD_REQUEST).build();
+            } finally {
+                em.close();
+            }
         }
 
         return null;
