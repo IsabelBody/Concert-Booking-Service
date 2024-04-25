@@ -13,16 +13,17 @@ import javax.ws.rs.core.NewCookie;
 import javax.ws.rs.core.Response;
 
 import org.apache.commons.lang3.NotImplementedException;
-import proj.concert.common.dto.BookingRequestDTO;
-import proj.concert.common.dto.ConcertDTO;
-import proj.concert.common.dto.ConcertInfoSubscriptionDTO;
-import proj.concert.common.dto.UserDTO;
+import proj.concert.common.dto.*;
 import proj.concert.common.types.BookingStatus;
 import proj.concert.service.domain.Concert;
 import proj.concert.service.domain.User;
 import proj.concert.service.jaxrs.LocalDateTimeParam;
 import proj.concert.service.mapper.ConcertMapper;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.UUID;
 
 @Path("/concert-service")
@@ -33,7 +34,8 @@ public class ConcertResource {
 
     // Use for debugging in console
     private static Logger LOGGER = LoggerFactory.getLogger(ConcertResource.class);
-    private EntityManager em = PersistenceManager.instance().createEntityManager();
+
+    private HashMap<Concert, List<ConcertInfoSubscriptionDTO>> subscriptions = new HashMap<>();
 
     @POST
     @Path("/login")
@@ -45,6 +47,7 @@ public class ConcertResource {
         - testFailedLogin_IncorrectPassword
         - testSuccessfulLogin
         */
+        EntityManager em = PersistenceManager.instance().createEntityManager();
 
         try {
             em.getTransaction().begin();
@@ -60,6 +63,8 @@ public class ConcertResource {
                 String newToken = UUID.randomUUID().toString();
                 cookie = new NewCookie("auth", newToken);
                 user.setToken(newToken);
+
+                LOGGER.info("LOGGED IN " + user.getUsername() + " with token:" + user.getToken());
 
                 // save token in database
                 em.persist(user);
@@ -95,6 +100,7 @@ public class ConcertResource {
         - testGetSingleConcertWithMultiplePerformersAndDates
         - testGetNonExistentConcert
         */
+        EntityManager em = PersistenceManager.instance().createEntityManager();
 
         try {
             em.getTransaction().begin();
@@ -266,12 +272,13 @@ public class ConcertResource {
         /* TESTS TO COVER:
         - testSubscription
         - testSubscriptionForDifferentConcert
+
+        COVERED TESTS:
         - testUnauthorizedSubscription
-        - testBadSubscription
         - testBadSubscription_NonexistentConcert
         - testBadSubscription_NonexistentDate
         */
-
+        EntityManager em = PersistenceManager.instance().createEntityManager();
         User user = getAuthenticatedUser(clientCookie);
 
         if (user == null) {
@@ -281,20 +288,33 @@ public class ConcertResource {
                 em.getTransaction().begin();
                 Concert concert = em.createQuery(
                                 "select c from Concert c where c.id = :id and :date member of c.dates", Concert.class)
-                                   .setParameter("id", request.getConcertId())
-                                   .setParameter("date", request.getDate())
-                                   .getSingleResult();
+                        .setParameter("id", request.getConcertId())
+                        .setParameter("date", request.getDate())
+                        .getSingleResult();
 
                 em.getTransaction().commit();
 
+                if (subscriptions.containsKey(concert)) {
+                    subscriptions.get(concert).add(request);
+                    LOGGER.info("subscriptions" + subscriptions);
+
+                } else {
+                    List<ConcertInfoSubscriptionDTO> subscriptionsForConcert = new ArrayList<>();
+                    subscriptionsForConcert.add(request);
+                    subscriptions.put(concert, subscriptionsForConcert);
+                    LOGGER.info("subscriptions" + subscriptions);
+                }
+
+                return Response.ok().build();
+
             } catch (Exception e) {
+                LOGGER.info("ERROR OCCURED: " + e.getClass().getCanonicalName());
                 return Response.status(Response.Status.BAD_REQUEST).build();
             } finally {
                 em.close();
             }
         }
 
-        return null;
     }
 
 
@@ -308,28 +328,27 @@ public class ConcertResource {
      *         or no user can be found, return null.
      */
     private User getAuthenticatedUser(Cookie clientCookie) {
+
+        EntityManager em = PersistenceManager.instance().createEntityManager();
         User user = null;
 
-        if (clientCookie != null) {
-            // try to get the user the token is associated to
-            try {
-                em.getTransaction().begin();
-                user = em.createQuery(
-                                "select u from User u where u.token = :token", User.class)
-                        .setParameter("token", clientCookie.getValue())
-                        .getSingleResult();
+        // try to get the user the token is associated to
+        try {
 
-                LOGGER.info("user's token: " + user.getToken());
-                LOGGER.info("user's username: " + user.getUsername());
+            em.getTransaction().begin();
+            user = em.createQuery(
+                            "select u from User u where u.token = :token", User.class)
+                    .setParameter("token", clientCookie.getValue())
+                    .getSingleResult();
 
-                em.getTransaction().commit();
+            LOGGER.info("user: " + user.getUsername() + " w/ token: " + user.getToken());
 
-            } catch (Exception e) {
-                LOGGER.info("an error occured" + e.getClass().getCanonicalName());
-            } finally {
-                if (em != null && em.isOpen())
-                    em.close();
-            }
+            em.getTransaction().commit();
+
+        } catch (Exception e) {
+            LOGGER.info("ERROR OCCURED: " + e.getClass().getCanonicalName());
+        } finally {
+            em.close();
         }
 
         return user;
