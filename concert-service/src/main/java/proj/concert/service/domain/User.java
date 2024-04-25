@@ -32,6 +32,9 @@ public class User {
     @OneToMany(mappedBy = "user")
     private Set<Booking> bookings = new HashSet<>();
 
+    @Column(name = "TOKEN")
+    private String token;
+
     public User() { }
 
     public User(Long id, String username, String password, Long version) {
@@ -84,6 +87,10 @@ public class User {
     public void addBooking(Booking booking) {
         bookings.add(booking);
     }
+
+    public void setToken(String token) {this.token = token; }
+
+    public String getToken() { return token; }
 
     @Override
     public String toString() {

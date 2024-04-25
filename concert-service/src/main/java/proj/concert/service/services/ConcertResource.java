@@ -37,7 +37,7 @@ public class ConcertResource {
 
     @POST
     @Path("/login")
-    public Response loginUser(UserDTO credentials, @CookieParam("auth") Cookie clientId) {
+    public Response loginUser(UserDTO credentials, @CookieParam("auth") Cookie clientCookie) {
         // RETURN: Response with "auth" cookie
 
         /* PASSING TESTS:
@@ -48,23 +48,22 @@ public class ConcertResource {
 
         try {
             em.getTransaction().begin();
-            TypedQuery<User> userQuery = em.createQuery(
+            User user = em.createQuery(
                     "select u from User u where u.username = :username and u.password = :password", User.class)
-                       .setParameter("username", credentials.getUsername())
-                       .setParameter("password", credentials.getPassword());
-
-            User user = userQuery.getSingleResult();
+                    .setParameter("username", credentials.getUsername())
+                    .setParameter("password", credentials.getPassword())
+                    .getSingleResult();
 
             em.getTransaction().commit();
 
-            NewCookie newCookie = makeCookie(clientId);
-            return Response.ok().cookie(newCookie).build();
+            return Response.ok().cookie(makeCookie(user, clientCookie)).build();
 
         } catch (Exception e) {
             return Response.status(Response.Status.UNAUTHORIZED).build();
         }
         finally {
-            em.close();
+            if (em != null && em.isOpen())
+                em.close();
         }
     }
 
@@ -162,7 +161,7 @@ public class ConcertResource {
 
     @POST
     @Path("/bookings")
-    public Response createBooking(BookingRequestDTO request) {
+    public Response createBooking(BookingRequestDTO request, @CookieParam("auth") Cookie clientCookie) {
         // RETURN: Response with Location header in the form of "/bookings/{id}" if authenticated,
         //         otherwise, return Response object with status code
 
@@ -180,7 +179,7 @@ public class ConcertResource {
 
     @GET
     @Path("/bookings")
-    public Response getAllBookingsForUser() {
+    public Response getAllBookingsForUser(@CookieParam("auth") Cookie clientCookie) {
         // RETURN: a List<BookingDTO>
         //         or if not authenticated, just the Response object with status code
 
@@ -199,7 +198,7 @@ public class ConcertResource {
 
     @GET
     @Path("/bookings/{id}")
-    public Response getBookingById(@PathParam("id") long id) {
+    public Response getBookingById(@PathParam("id") long id, @CookieParam("auth") Cookie clientCookie) {
         // RETURN: a BookingDTO instance if the booking is owned by the user,
         //         otherwise, just a Response object with status code
 
@@ -258,27 +257,71 @@ public class ConcertResource {
         throw new NotImplementedException();
     }
 
-    /**
-     * Helper method that can be called from every service method to generate a
-     * NewCookie instance, if necessary, based on the clientId parameter.
-     *
-     * @param clientId the Cookie whose name is Config.CLIENT_COOKIE, extracted
-     *                 from a HTTP request message. This can be null if there was no cookie
-     *                 named Config.CLIENT_COOKIE present in the HTTP request message.
-     * @return a NewCookie object, with a generated UUID value, if the clientId
-     * parameter is null. If the clientId parameter is non-null (i.e. the HTTP
-     * request message contained a cookie named Config.CLIENT_COOKIE), this
-     * method returns null as there's no need to return a NewCookie in the HTTP
-     * response message.
-     */
-    private NewCookie makeCookie(Cookie clientId) {
-        NewCookie newCookie = null;
 
-        if (clientId == null) {
-            newCookie = new NewCookie("auth", UUID.randomUUID().toString());
-            LOGGER.info("Generated cookie: " + newCookie.getValue());
+    /**
+     * Helper method that gets a User object based on provided token.
+     *
+     * @param clientCookie the Cookie whose name auth, extracted from a HTTP request message.
+     *                     This can be null if there was no cookie in the request message.
+     *
+     * @return a User object that has the associated token. If there is no token,
+     *         or no user can be found, return null.
+     */
+    private User getAuthenticatedUser(Cookie clientCookie) {
+        User user = null;
+
+        if (clientCookie != null) {
+            // try to get the user the token is associated to
+            try {
+                em.getTransaction().begin();
+                user = em.createQuery(
+                                "select u from User u where u.token = :token", User.class)
+                        .setParameter("token", clientCookie.getValue())
+                        .getSingleResult();
+
+                em.getTransaction().commit();
+
+            } catch (Exception ignored) {}
+            finally {
+                if (em != null && em.isOpen())
+                    em.close();
+            }
+        }
+
+        return user;
+    }
+
+
+    /**
+     * Helper method that generates a NewCookie instance, if necessary.
+     *
+     * @param clientCookie the Cookie whose name auth, extracted
+     *                 from a HTTP request message. This can be null if
+     *                 there was no cookie in the request message.
+     *
+     * @return a NewCookie object, with a generated UUID value, if the clientId
+     * parameter is null. If the request message contained a cookie named auth, this
+     * method returns null as there's no need to return a NewCookie.
+     */
+    private NewCookie makeCookie(User user, Cookie clientCookie) {
+        // 1st option: create a new cookie ONLY when no token is already present
+        NewCookie newCookie = new NewCookie("auth", user.getToken());
+
+        if (clientCookie == null) {
+            String newToken = UUID.randomUUID().toString();
+            newCookie = new NewCookie("auth", newToken);
+            user.setToken(newToken);
         }
 
         return newCookie;
+
+        // 2nd option: create a new cookie every time the user logs in
+
+        // String newToken = UUID.randomUUID().toString();
+        // NewCookie newCookie = new NewCookie("auth", newToken);
+        // user.setToken(newToken);
+        //
+        // return newCookie;
+
     }
 }
