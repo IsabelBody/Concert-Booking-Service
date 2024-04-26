@@ -1,5 +1,6 @@
 package proj.concert.service.services;
 
+import javafx.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,7 +40,7 @@ public class ConcertResource {
     // Use for debugging in console
     private static Logger LOGGER = LoggerFactory.getLogger(ConcertResource.class);
 
-    private HashMap<LocalDateTime, List<ConcertInfoSubscriptionDTO>> subscriptions = new HashMap<>();
+    private HashMap<LocalDateTime, ArrayList<Pair<AsyncResponse, Integer>>> subscriptions = new HashMap<>();
 
     @POST
     @Path("/login")
@@ -288,24 +289,27 @@ public class ConcertResource {
         if (user == null) {
             response.resume(Response.status(Response.Status.UNAUTHORIZED).build());
         } else {
+            long concertId = request.getConcertId();
+            LocalDateTime date = request.getDate();
+            int percentageBooked = request.getPercentageBooked();
+
             try {
                 em.getTransaction().begin();
                 Concert concert = em.createQuery(
                                 "select c from Concert c where c.id = :id and :date member of c.dates", Concert.class)
-                        .setParameter("id", request.getConcertId())
-                        .setParameter("date", request.getDate())
+                        .setParameter("id", concertId)
+                        .setParameter("date", date)
                         .getSingleResult();
 
                 em.getTransaction().commit();
 
-                LocalDateTime date = request.getDate();
                 if (subscriptions.containsKey(date)) {
-                    subscriptions.get(date).add(request);
+                    subscriptions.get(date).add(new Pair<>(response, percentageBooked));
                     LOGGER.info("subscriptions" + subscriptions);
 
                 } else {
-                    List<ConcertInfoSubscriptionDTO> subscriptionsForConcert = new ArrayList<>();
-                    subscriptionsForConcert.add(request);
+                    ArrayList<Pair<AsyncResponse, Integer>> subscriptionsForConcert = new ArrayList<>();
+                    subscriptionsForConcert.add(new Pair<>(response, percentageBooked));
                     subscriptions.put(date, subscriptionsForConcert);
                     LOGGER.info("subscriptions" + subscriptions);
                 }
