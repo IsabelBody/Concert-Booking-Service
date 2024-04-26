@@ -7,6 +7,8 @@ import javax.persistence.EntityManager;
 import javax.persistence.NoResultException;
 import javax.persistence.TypedQuery;
 import javax.ws.rs.*;
+import javax.ws.rs.container.AsyncResponse;
+import javax.ws.rs.container.Suspended;
 import javax.ws.rs.core.Cookie;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.NewCookie;
@@ -16,9 +18,11 @@ import org.apache.commons.lang3.NotImplementedException;
 import proj.concert.common.dto.*;
 import proj.concert.common.types.BookingStatus;
 import proj.concert.service.domain.Concert;
+import proj.concert.service.domain.Seat;
 import proj.concert.service.domain.User;
 import proj.concert.service.jaxrs.LocalDateTimeParam;
 import proj.concert.service.mapper.ConcertMapper;
+import proj.concert.service.util.TheatreLayout;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -265,7 +269,7 @@ public class ConcertResource {
 
     @POST
     @Path("/subscribe/concertInfo")
-    public Response createSubscription(ConcertInfoSubscriptionDTO request, @CookieParam("auth") Cookie clientCookie) {
+    public void createSubscription(@Suspended AsyncResponse response, ConcertInfoSubscriptionDTO request, @CookieParam("auth") Cookie clientCookie) {
         // RETURN: a ConcertInfoNotificationDTO instance,
         //         otherwise, a Response object with status code
 
@@ -282,7 +286,7 @@ public class ConcertResource {
         User user = getAuthenticatedUser(clientCookie);
 
         if (user == null) {
-            return Response.status(Response.Status.UNAUTHORIZED).build();
+            response.resume(Response.status(Response.Status.UNAUTHORIZED).build());
         } else {
             try {
                 em.getTransaction().begin();
@@ -306,18 +310,17 @@ public class ConcertResource {
                     LOGGER.info("subscriptions" + subscriptions);
                 }
 
-                return Response.ok().build();
+                response.resume(Response.status(Response.Status.OK).build());
 
             } catch (Exception e) {
                 LOGGER.info("ERROR OCCURED: " + e.getClass().getCanonicalName());
-                return Response.status(Response.Status.BAD_REQUEST).build();
+                response.resume(Response.status(Response.Status.BAD_REQUEST).build());
             } finally {
                 em.close();
             }
         }
 
     }
-
 
     /**
      * Helper method that gets a User object based on provided token.
