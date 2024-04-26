@@ -40,6 +40,10 @@ public class ConcertResource {
     // Use for debugging in console
     private static Logger LOGGER = LoggerFactory.getLogger(ConcertResource.class);
 
+    /* Dictionary storing all subscriptions, where key is the date of the concert
+    and the value is the list of subscribers that have subscribed to that particular date.
+    Each subscriber is represented by an AsyncResponse object and the threshold of the response.
+    */
     private HashMap<LocalDateTime, ArrayList<Pair<AsyncResponse, Integer>>> subscriptions = new HashMap<>();
 
     @POST
@@ -287,6 +291,7 @@ public class ConcertResource {
         - testBadSubscription_NonexistentDate
         */
         EntityManager em = PersistenceManager.instance().createEntityManager();
+
         User user = getAuthenticatedUser(clientCookie);
 
         if (user == null) {
@@ -306,15 +311,17 @@ public class ConcertResource {
 
                 em.getTransaction().commit();
 
+                // Add subscription request to dictionary of current subscriptions
                 if (subscriptions.containsKey(date)) {
+                    // Add subscription to an already existing list of subscribers for that date
                     subscriptions.get(date).add(new Pair<>(response, percentageBooked));
-                    LOGGER.info("subscriptions" + subscriptions);
-
+                    // LOGGER.info("subscriptions" + subscriptions);
                 } else {
+                    // Create a new list of subscribers for that date if there isn't one already
                     ArrayList<Pair<AsyncResponse, Integer>> subscriptionsForConcert = new ArrayList<>();
                     subscriptionsForConcert.add(new Pair<>(response, percentageBooked));
                     subscriptions.put(date, subscriptionsForConcert);
-                    LOGGER.info("subscriptions" + subscriptions);
+                    // LOGGER.info("subscriptions" + subscriptions);
                 }
 
                 response.resume(Response.status(Response.Status.OK).build());
@@ -337,6 +344,7 @@ public class ConcertResource {
         EntityManager em = PersistenceManager.instance().createEntityManager();
         em.getTransaction().begin();
 
+        // Get all seats that are booked for that date
         List<Seat> bookedSeats = em.createQuery(
                 "select s from Seat s where s.date = :date and s.isBooked = true", Seat.class)
                 .setParameter("date", date)
@@ -345,13 +353,16 @@ public class ConcertResource {
         em.getTransaction().commit();
         em.close();
 
+        // Get list of subscribers for that date
         ArrayList<Pair<AsyncResponse, Integer>> subscribers = subscriptions.get(date);
 
         synchronized (subscribers) {
             int totalBookedSeats = bookedSeats.size();
 
+            // For each subscriber, check whether their specific threshold is met
             for (Pair<AsyncResponse, Integer> subscriber : subscribers) {
                 if ((totalBookedSeats / TheatreLayout.NUM_SEATS_IN_THEATRE) >= subscriber.getValue()) {
+                    // Create a notification with the number of seats remaining for the concert
                     ConcertInfoNotificationDTO notification = new ConcertInfoNotificationDTO(
                             TheatreLayout.NUM_SEATS_IN_THEATRE - totalBookedSeats);
 
@@ -376,10 +387,9 @@ public class ConcertResource {
         EntityManager em = PersistenceManager.instance().createEntityManager();
         User user = null;
 
-        // try to get the user the token is associated to
         try {
-
             em.getTransaction().begin();
+
             user = em.createQuery(
                             "select u from User u where u.token = :token", User.class)
                     .setParameter("token", clientCookie.getValue())
