@@ -35,7 +35,7 @@ public class ConcertResource {
     // Use for debugging in console
     private static Logger LOGGER = LoggerFactory.getLogger(ConcertResource.class);
 
-    private HashMap<Concert, List<ConcertInfoSubscriptionDTO>> subscriptions = new HashMap<>();
+    private HashMap<LocalDateTime, List<ConcertInfoSubscriptionDTO>> subscriptions = new HashMap<>();
 
     @POST
     @Path("/login")
@@ -294,14 +294,15 @@ public class ConcertResource {
 
                 em.getTransaction().commit();
 
-                if (subscriptions.containsKey(concert)) {
-                    subscriptions.get(concert).add(request);
+                LocalDateTime date = request.getDate();
+                if (subscriptions.containsKey(date)) {
+                    subscriptions.get(date).add(request);
                     LOGGER.info("subscriptions" + subscriptions);
 
                 } else {
                     List<ConcertInfoSubscriptionDTO> subscriptionsForConcert = new ArrayList<>();
                     subscriptionsForConcert.add(request);
-                    subscriptions.put(concert, subscriptionsForConcert);
+                    subscriptions.put(date, subscriptionsForConcert);
                     LOGGER.info("subscriptions" + subscriptions);
                 }
 
