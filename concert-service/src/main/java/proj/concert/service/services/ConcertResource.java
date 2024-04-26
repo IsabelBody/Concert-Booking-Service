@@ -203,6 +203,9 @@ public class ConcertResource {
         - testAttemptDoubleBooking_OverlappingSeats
         */
 
+        // Once a valid booking has been made:
+        notifySubscribers(request.getDate());
+
         throw new NotImplementedException();
     }
 
@@ -321,6 +324,39 @@ public class ConcertResource {
                 response.resume(Response.status(Response.Status.BAD_REQUEST).build());
             } finally {
                 em.close();
+            }
+        }
+
+    }
+
+    /**
+     * Helper method that notifies all subscribers for a particular concert / date.
+     * @param date the date of the concert that has just been booked for.
+     */
+    private void notifySubscribers(LocalDateTime date) {
+        EntityManager em = PersistenceManager.instance().createEntityManager();
+        em.getTransaction().begin();
+
+        List<Seat> bookedSeats = em.createQuery(
+                "select s from Seat s where s.date = :date and s.isBooked = true", Seat.class)
+                .setParameter("date", date)
+                .getResultList();
+
+        em.getTransaction().commit();
+        em.close();
+
+        ArrayList<Pair<AsyncResponse, Integer>> subscribers = subscriptions.get(date);
+
+        synchronized (subscribers) {
+            int totalBookedSeats = bookedSeats.size();
+
+            for (Pair<AsyncResponse, Integer> subscriber : subscribers) {
+                if ((totalBookedSeats / TheatreLayout.NUM_SEATS_IN_THEATRE) >= subscriber.getValue()) {
+                    ConcertInfoNotificationDTO notification = new ConcertInfoNotificationDTO(
+                            TheatreLayout.NUM_SEATS_IN_THEATRE - totalBookedSeats);
+
+                    subscriber.getKey().resume(notification);
+                }
             }
         }
 
