@@ -113,7 +113,6 @@ public class ConcertResource {
         */
         EntityManager em = PersistenceManager.instance().createEntityManager();
 
-
         try {
             em.getTransaction().begin();
             Concert concert = em.find(Concert.class, id);
@@ -212,7 +211,6 @@ public class ConcertResource {
         - testAttemptDoubleBooking_OverlappingSeats
         */
 
-
         User user = getAuthenticatedUser(clientCookie);
         // check user is authenticated
         if (user == null) {
@@ -234,9 +232,6 @@ public class ConcertResource {
             if (!concert.getDates().contains(request.getDate())) {
                 return Response.status(Response.Status.BAD_REQUEST).build();
             }
-
-
-            // TODO: make use the getSeat functionality?
 
             // changing request from list of seat labels into list of seats
             // querying the database
@@ -260,10 +255,8 @@ public class ConcertResource {
             Booking booking = new Booking(request.getConcertId(), request.getDate(), requestedSeats);
             booking.setUser(user);
 
-
             em.persist(booking);
             em.getTransaction().commit();
-
 
             URI location = new URI("http://localhost:10000/services/concert-service/bookings/" + booking.getId());
             return Response.created(location).build();
@@ -287,17 +280,107 @@ public class ConcertResource {
         // RETURN: a List<BookingDTO>
         //         or if not authenticated, just the Response object with status code
 
-        /* TESTS TO COVER:
-        - testGetAllBookingsForUser
-        - testAttemptGetAllBookingsWhenNotAuthenticated
+        /*
+                 TESTS TO COVER:
+                - testGetAllBookingsForUser
+                - testAttemptGetAllBookingsWhenNotAuthenticated
+
         */
+        EntityManager em = PersistenceManager.instance().createEntityManager();
 
-        // To add an ArrayList as a Response object's entity, you should use the following code:
-        // List<Concert> concerts = new ArrayList<Concert>();
-        // GenericEntity<List<Concert>> entity = new GenericEntity<List<Concert>>(concerts) {};
-        // ResponseBuilder builder = Response.ok(entity);
+        // check user is authenticated
+        User user = getAuthenticatedUser(clientCookie);
+        if (user == null) {
+            return Response.status(Response.Status.UNAUTHORIZED).build();
+        }
 
-        throw new NotImplementedException();
+        try {
+            em.getTransaction().begin();
+
+            // get bookings from user from database
+            TypedQuery<Booking> bookingQuery = em.createQuery("select b from Booking b where b.user = :user", Booking.class)
+                    .setParameter("user", user);
+            List<Booking> bookings = bookingQuery.getResultList();
+
+
+            // need to return list of dtos not booking objects
+            // converting:
+            List<BookingDTO> bookingDTOs = new ArrayList<>();
+            for (Booking booking : bookings) {
+                BookingDTO dto = BookingMapper.toDto(booking);
+                bookingDTOs.add(dto);
+            }
+
+            em.getTransaction().commit();
+            return Response.ok(bookingDTOs).build(); // success
+        } catch (Exception e) {
+            // if error, rollback
+            if (em.getTransaction().isActive()) {
+                em.getTransaction().rollback();
+            }
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build(); // error
+        } finally {
+            if (em != null && em.isOpen()) {
+                em.close();
+            }
+        }
+
+    }
+
+    @GET
+    @Path("/bookings")
+    public Response getBookingForUser(@CookieParam("auth") Cookie cookie) {
+        EntityManager em = PersistenceManager.instance().createEntityManager();
+
+
+        // Checking that the client is authenticated
+        if (cookie == null) {
+            return Response.status(Response.Status.UNAUTHORIZED).build();
+        }
+        String token = cookie.getValue();
+
+        // Then we have a UUID token
+        List<Booking> bookings;
+        if (token.length() == UUID.randomUUID().toString().length()) {
+
+            // Check there is a user for this token
+            em = PersistenceManager.instance().createEntityManager();
+            try {
+                em.getTransaction().begin();
+
+                // Checking the token matches
+                TypedQuery<User> userQuery = em.createQuery("select u from User u where token = :authToken", User.class).setParameter("authToken", token);
+                User user = userQuery.getSingleResult();
+
+                // Getting all bookings for this user.
+                TypedQuery<Booking> bookingQuery = em.createQuery("select b from Booking b where b.userId = :userId", Booking.class)
+                        .setParameter("userId", user.getId());
+
+                bookings = bookingQuery.getResultList();
+
+                em.getTransaction().commit();
+
+            } catch (NoResultException  e) {
+                // This token isn't valid so return unauthroized.
+                return Response.status(Response.Status.UNAUTHORIZED).build();
+            } finally {
+                em.close();
+            }
+
+            // Converting bookings to DTOs
+            List<BookingDTO> bookingsListDTO = new ArrayList<BookingDTO>();
+            for (Booking b : bookings) {
+                BookingDTO dto = BookingMapper.toDto(b);
+                bookingsListDTO.add(dto);
+            }
+
+            return Response.ok().entity(bookingsListDTO).build();
+
+        }
+        else {
+            //We dont have a UUID token - so not authorized.
+            return Response.status(Response.Status.UNAUTHORIZED).build();
+        }
     }
 
 
@@ -307,15 +390,16 @@ public class ConcertResource {
         // RETURN: a BookingDTO instance if the booking is owned by the user,
         //         otherwise, just a Response object with status code
 
-    /* TESTS TO COVER:
-    - testGetOwnBookingById
-    - testAttemptGetOthersBookingById
-    */
+        /* TESTS TO COVER:
+        - testGetOwnBookingById
+        - testAttemptGetOthersBookingById
+        */
         EntityManager em = PersistenceManager.instance().createEntityManager();
 
+        // getting user from cookie
         User user = getAuthenticatedUser(clientCookie);
 
-        // Checking if user is authenticated
+        // checking if user is authenticated
         if (user == null) {
             return Response.status(Response.Status.FORBIDDEN).build();
         }
@@ -325,11 +409,12 @@ public class ConcertResource {
             Booking booking = em.find(Booking.class, id);
             em.getTransaction().commit();
 
+            // does the booking belong to this user?
             if (booking != null) {
                 if (!booking.getUser().equals(user)) {
-                    // The booking is not owned by the authenticated user
                     return Response.status(Response.Status.FORBIDDEN).build();
                 }
+                // returned object needs to be dto
                 BookingDTO dtoBooking = BookingMapper.toDto(booking);
                 return Response.ok(dtoBooking).build(); // success
             } else {
@@ -359,14 +444,13 @@ public class ConcertResource {
                 - testAttemptDoubleBooking_OverlappingSeats
                 */
 
-        // Converting string to LocalDatetime from pathparam
-        LocalDateTimeParam ldtp = new LocalDateTimeParam(dateTime);
-        LocalDateTime datetime = ldtp.getLocalDateTime();
-
         EntityManager em = PersistenceManager.instance().createEntityManager();
 
+        // date is given as string so convert to LocalDatetime
+        LocalDateTimeParam initDateObj = new LocalDateTimeParam(dateTime);
+        LocalDateTime datetime = initDateObj.getLocalDateTime();
 
-        em = PersistenceManager.instance().createEntityManager();
+
         try {
             em.getTransaction().begin();
             // Status is booked
@@ -415,8 +499,6 @@ public class ConcertResource {
         }
 
     }
-
-
 
 
 
