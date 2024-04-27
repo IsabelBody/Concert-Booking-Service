@@ -31,6 +31,16 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import java.net.URI;
+import java.time.LocalDateTime;
+import java.util.*;
+
+import javax.persistence.*;
+import javax.ws.rs.*;
+import javax.ws.rs.container.AsyncResponse;
+import javax.ws.rs.container.Suspended;
+import javax.ws.rs.core.*;
+
 @Path("/concert-service")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
@@ -192,7 +202,8 @@ public class ConcertResource {
         // RETURN: Response with Location header in the form of "/bookings/{id}" if authenticated,
         //         otherwise, return Response object with status code
 
-        /* TESTS TO COVER:
+         /*
+         TESTS TO COVER:
         - testAttemptUnauthorizedBooking
         - testMakeSuccessfulBooking
         - testAttemptBookingWrongDate
@@ -201,9 +212,9 @@ public class ConcertResource {
         - testAttemptDoubleBooking_OverlappingSeats
         */
 
+
         User user = getAuthenticatedUser(clientCookie);
         // check user is authenticated
-
         if (user == null) {
             return Response.status(Response.Status.UNAUTHORIZED).build();
         }
@@ -270,7 +281,6 @@ public class ConcertResource {
     }
 
 
-
     @GET
     @Path("/bookings")
     public Response getAllBookingsForUser(@CookieParam("auth") Cookie clientCookie) {
@@ -307,7 +317,7 @@ public class ConcertResource {
 
         // Checking if user is authenticated
         if (user == null) {
-            return Response.status(Response.Status.UNAUTHORIZED).build();
+            return Response.status(Response.Status.FORBIDDEN).build();
         }
 
         try {
