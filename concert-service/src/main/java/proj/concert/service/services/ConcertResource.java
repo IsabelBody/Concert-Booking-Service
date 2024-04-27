@@ -324,65 +324,7 @@ public class ConcertResource {
                 em.close();
             }
         }
-
     }
-
-    @GET
-    @Path("/bookings")
-    public Response getBookingForUser(@CookieParam("auth") Cookie cookie) {
-        EntityManager em = PersistenceManager.instance().createEntityManager();
-
-
-        // Checking that the client is authenticated
-        if (cookie == null) {
-            return Response.status(Response.Status.UNAUTHORIZED).build();
-        }
-        String token = cookie.getValue();
-
-        // Then we have a UUID token
-        List<Booking> bookings;
-        if (token.length() == UUID.randomUUID().toString().length()) {
-
-            // Check there is a user for this token
-            em = PersistenceManager.instance().createEntityManager();
-            try {
-                em.getTransaction().begin();
-
-                // Checking the token matches
-                TypedQuery<User> userQuery = em.createQuery("select u from User u where token = :authToken", User.class).setParameter("authToken", token);
-                User user = userQuery.getSingleResult();
-
-                // Getting all bookings for this user.
-                TypedQuery<Booking> bookingQuery = em.createQuery("select b from Booking b where b.userId = :userId", Booking.class)
-                        .setParameter("userId", user.getId());
-
-                bookings = bookingQuery.getResultList();
-
-                em.getTransaction().commit();
-
-            } catch (NoResultException  e) {
-                // This token isn't valid so return unauthroized.
-                return Response.status(Response.Status.UNAUTHORIZED).build();
-            } finally {
-                em.close();
-            }
-
-            // Converting bookings to DTOs
-            List<BookingDTO> bookingsListDTO = new ArrayList<BookingDTO>();
-            for (Booking b : bookings) {
-                BookingDTO dto = BookingMapper.toDto(b);
-                bookingsListDTO.add(dto);
-            }
-
-            return Response.ok().entity(bookingsListDTO).build();
-
-        }
-        else {
-            //We dont have a UUID token - so not authorized.
-            return Response.status(Response.Status.UNAUTHORIZED).build();
-        }
-    }
-
 
     @GET
     @Path("/bookings/{id}")
@@ -449,7 +391,6 @@ public class ConcertResource {
         // date is given as string so convert to LocalDatetime
         LocalDateTimeParam initDateObj = new LocalDateTimeParam(dateTime);
         LocalDateTime datetime = initDateObj.getLocalDateTime();
-
 
         try {
             em.getTransaction().begin();
