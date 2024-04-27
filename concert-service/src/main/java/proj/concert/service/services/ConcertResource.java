@@ -258,7 +258,7 @@ public class ConcertResource {
             em.persist(booking);
             em.getTransaction().commit();
 
-            URI location = new URI("http://localhost:10000/services/concert-service/bookings/" + booking.getId());
+            URI location = new URI("/concert-service/bookings/" + booking.getId());
             return Response.created(location).build();
 
         } catch (Exception e) {
@@ -301,7 +301,6 @@ public class ConcertResource {
             TypedQuery<Booking> bookingQuery = em.createQuery("select b from Booking b where b.user = :user", Booking.class)
                     .setParameter("user", user);
             List<Booking> bookings = bookingQuery.getResultList();
-
 
             // need to return list of dtos not booking objects
             // converting:
@@ -352,17 +351,17 @@ public class ConcertResource {
             em.getTransaction().commit();
 
             // does the booking belong to this user?
-            if (booking != null) {
+            if (booking == null) {
+                return Response.status(Response.Status.FORBIDDEN).build();
+            }
+
                 if (!booking.getUser().equals(user)) {
                     return Response.status(Response.Status.FORBIDDEN).build();
                 }
                 // returned object needs to be dto
                 BookingDTO dtoBooking = BookingMapper.toDto(booking);
                 return Response.ok(dtoBooking).build(); // success
-            } else {
-                // booking is not found
-                return Response.status(Response.Status.NOT_FOUND).build();
-            }
+
         }
         finally {
             em.close();
