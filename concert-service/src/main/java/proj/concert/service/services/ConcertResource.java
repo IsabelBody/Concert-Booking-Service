@@ -34,7 +34,6 @@ import java.util.stream.Collectors;
 @Path("/concert-service")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-
 public class ConcertResource {
 
     // Use for debugging in console
@@ -226,7 +225,7 @@ public class ConcertResource {
             }
 
 
-            // TODO: Getting seats should actually be done by getSeats()
+            // TODO: make use the getSeat functionality?
 
             // changing request from list of seat labels into list of seats
             // querying the database
@@ -254,8 +253,6 @@ public class ConcertResource {
             em.persist(booking);
             em.getTransaction().commit();
 
-
-            // TODO: add notification method call here?
 
             URI location = new URI("http://localhost:10000/services/concert-service/bookings/" + booking.getId());
             return Response.created(location).build();
@@ -335,56 +332,102 @@ public class ConcertResource {
         }
     }
 
-
-
     @GET
     @Path("/seats/{date}")
-    public Response getSeats(@PathParam("date") LocalDateTimeParam date,
-                             @QueryParam("status") BookingStatus status) {
+    public Response getSeats(@QueryParam("status") BookingStatus status, @PathParam("date") String dateTime) {
 
         // RETURN: a List<SeatDTO>
 
         /* TESTS TO COVER:
         - testGetBookedSeatsForDate
-        - testGetUnbookedSeatsForDate
-        - testGetAllSeatsForDate
+                - testGetUnbookedSeatsForDate
+                - testGetAllSeatsForDate
 
         ALSO USED IN:
         - testAttemptUnauthorizedBooking
-        - testMakeSuccessfulBooking
-        - testAttemptDoubleBooking_OverlappingSeats
-        */
+                - testMakeSuccessfulBooking
+                - testAttemptDoubleBooking_OverlappingSeats
+                */
 
-        // To use the 'date' param, do:
-        // LocalDateTime date = date.getLocalDateTime();
+        // Converting string to LocalDatetime from pathparam
+        LocalDateTimeParam ldtp = new LocalDateTimeParam(dateTime);
+        LocalDateTime datetime = ldtp.getLocalDateTime();
 
-        // To add an ArrayList as a Response object's entity, you should use the following code:
-        // List<Concert> concerts = new ArrayList<Concert>();
-        // GenericEntity<List<Concert>> entity = new GenericEntity<List<Concert>>(concerts) {};
-        // ResponseBuilder builder = Response.ok(entity);
+        EntityManager em = PersistenceManager.instance().createEntityManager();
 
 
+        em = PersistenceManager.instance().createEntityManager();
+        try {
+            em.getTransaction().begin();
+            // Status is booked
+            if (status == BookingStatus.Booked) {
+                TypedQuery<Seat> seatsQuery = em.createQuery("select s from Seat s where s.isBooked = :isBooked and s.date = :date", Seat.class)
+                        .setParameter("isBooked", true)
+                        .setParameter("date", datetime);
+                List<Seat> seatListBooked = seatsQuery.getResultList();
 
-        throw new NotImplementedException();
+                List<SeatDTO> seatDTOList = new ArrayList<>();
+
+                for (Seat s : seatListBooked) {
+                    SeatDTO seatDTO = SeatMapper.toDto(s);
+                    seatDTOList.add(seatDTO);
+                }
+                return Response.ok().entity(seatDTOList).build();
+            } else if (status == BookingStatus.Unbooked) {
+                TypedQuery<Seat> seatsQuery = em.createQuery("select s from Seat s where s.isBooked = :isBooked and s.date = :date", Seat.class)
+                        .setParameter("isBooked", false)
+                        .setParameter("date", datetime);
+                List<Seat> seatListUnbooked = seatsQuery.getResultList();
+
+                List<SeatDTO> seatDTOList = new ArrayList<>();
+
+                for (Seat s : seatListUnbooked) {
+                    SeatDTO seatDTO = SeatMapper.toDto(s);
+                    seatDTOList.add(seatDTO);
+                }
+                return Response.ok().entity(seatDTOList).build();
+            } else {
+                TypedQuery<Seat> seatsQuery = em.createQuery("select s from Seat s where s.date = :date", Seat.class)
+                        .setParameter("date", datetime);
+                List<Seat> seatListAny = seatsQuery.getResultList();
+
+                List<SeatDTO> seatDTOList = new ArrayList<>();
+
+                for (Seat s : seatListAny) {
+                    SeatDTO seatDTO = SeatMapper.toDto(s);
+                    seatDTOList.add(seatDTO);
+                }
+                return Response.ok().entity(seatDTOList).build();
+            }
+        }
+        finally{
+            em.close();
+        }
+
     }
 
-    @POST
+
+
+
+
+
+/*    @POST
     @Path("/subscribe/concertInfo")
     public Response createSubscription(ConcertInfoSubscriptionDTO request) {
         // RETURN: a ConcertInfoNotificationDTO instance,
         //         otherwise, a Response object with status code
 
-        /* TESTS TO COVER:
+        *//* TESTS TO COVER:
         - testSubscription
         - testSubscriptionForDifferentConcert
         - testUnauthorizedSubscription
         - testBadSubscription
         - testBadSubscription_NonexistentConcert
         - testBadSubscription_NonexistentDate
-        */
+        *//*
 
         throw new NotImplementedException();
-    }
+    }*/
 
 
     /**
