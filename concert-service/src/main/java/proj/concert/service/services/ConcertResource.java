@@ -124,8 +124,7 @@ public class ConcertResource {
             } else {
                 return Response.status(Response.Status.NOT_FOUND).build();
             }
-        }
-        finally {
+        } finally {
             em.close();
         }
     }
@@ -303,7 +302,7 @@ public class ConcertResource {
             List<Booking> bookings = bookingQuery.getResultList();
 
             // need to return list of dtos not booking objects
-            // converting:
+            // converting each booking
             List<BookingDTO> bookingDTOs = new ArrayList<>();
             for (Booking booking : bookings) {
                 BookingDTO dto = BookingMapper.toDto(booking);
@@ -350,21 +349,19 @@ public class ConcertResource {
             Booking booking = em.find(Booking.class, id);
             em.getTransaction().commit();
 
-            // does the booking belong to this user?
-            if (booking == null) {
+            // checking booking object exists and is owned by user
+            if (booking == null || !booking.getUser().equals(user)) {
                 return Response.status(Response.Status.FORBIDDEN).build();
             }
 
-                if (!booking.getUser().equals(user)) {
-                    return Response.status(Response.Status.FORBIDDEN).build();
-                }
-                // returned object needs to be dto
-                BookingDTO dtoBooking = BookingMapper.toDto(booking);
-                return Response.ok(dtoBooking).build(); // success
+            // returned object needs to be dto
+            BookingDTO dtoBooking = BookingMapper.toDto(booking);
+            return Response.ok(dtoBooking).build(); // success
 
-        }
-        finally {
-            em.close();
+        } finally {
+            if (em != null && em.isOpen()) {
+                em.close();
+            }
         }
     }
 
@@ -384,7 +381,6 @@ public class ConcertResource {
                 - testMakeSuccessfulBooking
                 - testAttemptDoubleBooking_OverlappingSeats
                 */
-
         EntityManager em = PersistenceManager.instance().createEntityManager();
 
         // date is given as string so convert to LocalDatetime
@@ -393,49 +389,35 @@ public class ConcertResource {
 
         try {
             em.getTransaction().begin();
-            // Status is booked
-            if (status == BookingStatus.Booked) {
-                TypedQuery<Seat> seatsQuery = em.createQuery("select s from Seat s where s.isBooked = :isBooked and s.date = :date", Seat.class)
-                        .setParameter("isBooked", true)
-                        .setParameter("date", datetime);
-                List<Seat> seatListBooked = seatsQuery.getResultList();
 
-                List<SeatDTO> seatDTOList = new ArrayList<>();
+            List<Seat> seatList; // initiate list outside of conditional scope
 
-                for (Seat s : seatListBooked) {
-                    SeatDTO seatDTO = SeatMapper.toDto(s);
-                    seatDTOList.add(seatDTO);
+            // getting seat list from database
+            if (status == BookingStatus.Booked || status == BookingStatus.Unbooked) {
+                boolean status_param = false;
+                if (status == BookingStatus.Booked) {
+                    status_param = true;
                 }
-                return Response.ok().entity(seatDTOList).build();
-            } else if (status == BookingStatus.Unbooked) {
-                TypedQuery<Seat> seatsQuery = em.createQuery("select s from Seat s where s.isBooked = :isBooked and s.date = :date", Seat.class)
-                        .setParameter("isBooked", false)
-                        .setParameter("date", datetime);
-                List<Seat> seatListUnbooked = seatsQuery.getResultList();
-
-                List<SeatDTO> seatDTOList = new ArrayList<>();
-
-                for (Seat s : seatListUnbooked) {
-                    SeatDTO seatDTO = SeatMapper.toDto(s);
-                    seatDTOList.add(seatDTO);
-                }
-                return Response.ok().entity(seatDTOList).build();
+                seatList = em.createQuery("select s from Seat s where s.isBooked = :isBooked and s.date = :date", Seat.class)
+                        .setParameter("isBooked", status_param)
+                        .setParameter("date", datetime).getResultList();
+            // when booking status is any / undefined
             } else {
-                TypedQuery<Seat> seatsQuery = em.createQuery("select s from Seat s where s.date = :date", Seat.class)
-                        .setParameter("date", datetime);
-                List<Seat> seatListAny = seatsQuery.getResultList();
-
-                List<SeatDTO> seatDTOList = new ArrayList<>();
-
-                for (Seat s : seatListAny) {
-                    SeatDTO seatDTO = SeatMapper.toDto(s);
-                    seatDTOList.add(seatDTO);
-                }
-                return Response.ok().entity(seatDTOList).build();
+                seatList = em.createQuery("select s from Seat s where s.date = :date", Seat.class)
+                        .setParameter("date", datetime).getResultList();
             }
-        }
-        finally{
-            em.close();
+
+            // mapping each seat to a DTO
+            List<SeatDTO> seatDTOs = new ArrayList<>();
+            for (Seat seat: seatList) {
+                SeatDTO seatDTO = SeatMapper.toDto(seat);
+                seatDTOs.add(seatDTO);
+            }
+            return Response.ok().entity(seatDTOs).build();
+        } finally {
+            if (em != null && em.isOpen()) {
+                em.close();
+            }
         }
 
     }
@@ -467,9 +449,8 @@ public class ConcertResource {
      *
      * @param clientCookie the Cookie whose name auth, extracted from a HTTP request message.
      *                     This can be null if there was no cookie in the request message.
-     *
      * @return a User object that has the associated token. If there is no token,
-     *         or no user can be found, return null.
+     * or no user can be found, return null.
      */
     private User getAuthenticatedUser(Cookie clientCookie) {
         User user = null;
