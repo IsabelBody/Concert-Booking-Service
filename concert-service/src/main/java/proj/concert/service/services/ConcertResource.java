@@ -220,38 +220,33 @@ public class ConcertResource {
         em.getTransaction().begin();
 
         try {
-
-            // Check if the concert exists
+            // Check if the concert exists and check date exists
             Concert concert = em.find(Concert.class, request.getConcertId());
-            if (concert == null) {
-                return Response.status(Response.Status.BAD_REQUEST).build();
-            }
-
-            // check date exists
-            if (!concert.getDates().contains(request.getDate())) {
+            if (concert == null || !concert.getDates().contains(request.getDate())) {
                 return Response.status(Response.Status.BAD_REQUEST).build();
             }
 
             // changing request from list of seat labels into list of seats
             // querying the database
-            List<Seat> requestedSeats = em.createQuery("select s from Seat s where s.label in :seatLabels and s.date = :concertDate", Seat.class)
+            List<Seat> seats = em.createQuery("select s from Seat s where s.label in :seatLabels and s.date = :concertDate", Seat.class)
                     .setParameter("seatLabels", request.getSeatLabels())
                     .setParameter("concertDate", request.getDate())
                     .getResultList();
 
+
             // Check if the requested seats are available
-            for (Seat seat : requestedSeats) {
+            for (Seat seat: seats) {
                 // if any seat is already booked, user is not allowed to book.
                 if (seat.getIsBooked()) {
                     return Response.status(Response.Status.FORBIDDEN).build();
                 } else {
-                    seat.setIsBooked(true);
-                    em.merge(seat);
+                    seat.setIsBooked(true); // seat is now booked
+                    em.merge(seat); // data is already in database, so we merge
                 }
             }
 
             // Create the booking
-            Booking booking = new Booking(request.getConcertId(), request.getDate(), requestedSeats);
+            Booking booking = new Booking(request.getConcertId(), request.getDate(), seats);
             booking.setUser(user);
 
             em.persist(booking);
@@ -262,7 +257,7 @@ public class ConcertResource {
 
         } catch (Exception e) {
             if (em.getTransaction().isActive()) {
-                em.getTransaction().rollback();
+                em.getTransaction().rollback(); // if any error, don't save changes
             }
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
         } finally {
@@ -297,26 +292,23 @@ public class ConcertResource {
             em.getTransaction().begin();
 
             // get bookings from user from database
-            TypedQuery<Booking> bookingQuery = em.createQuery("select b from Booking b where b.user = :user", Booking.class)
-                    .setParameter("user", user);
-            List<Booking> bookings = bookingQuery.getResultList();
+            List<Booking> bookings = em.createQuery("select b from Booking b where b.user = :user", Booking.class)
+                    .setParameter("user", user).getResultList();
 
             // need to return list of dtos not booking objects
             // converting each booking
             List<BookingDTO> bookingDTOs = new ArrayList<>();
-            for (Booking booking : bookings) {
+            for (Booking booking: bookings) {
                 BookingDTO dto = BookingMapper.toDto(booking);
                 bookingDTOs.add(dto);
             }
-
             em.getTransaction().commit();
             return Response.ok(bookingDTOs).build(); // success
         } catch (Exception e) {
-            // if error, rollback
             if (em.getTransaction().isActive()) {
-                em.getTransaction().rollback();
+                em.getTransaction().rollback(); // error, don't save changes
             }
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build(); // error
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
         } finally {
             if (em != null && em.isOpen()) {
                 em.close();
