@@ -22,8 +22,7 @@ public class Seat {
 	private BigDecimal price;
 
 	@Column(name = "ISBOOKED", nullable = false)
-	@Enumerated(EnumType.STRING)
-	private BookingStatus isBooked;
+	private boolean isBooked;
 
 	@Column(name = "DATE")
 	private LocalDateTime date;
@@ -36,7 +35,7 @@ public class Seat {
 		this.price = price;
 	}
 
-	public Seat(String label, BookingStatus isBooked, LocalDateTime date, BigDecimal price) {
+	public Seat(String label, boolean isBooked, LocalDateTime date, BigDecimal price) {
 		this.label = label;
 		this.isBooked = isBooked;
 		this.date = date;
@@ -65,11 +64,11 @@ public class Seat {
 		this.price = price;
 	}
 
-	public BookingStatus getIsBooked() {
+	public boolean getIsBooked() {
 		return isBooked;
 	}
 
-	public void setIsBooked(BookingStatus isBooked) {
+	public void setIsBooked(boolean isBooked) {
 		this.isBooked = isBooked;
 	}
 
