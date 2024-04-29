@@ -22,7 +22,7 @@ public class Seat {
 	private BigDecimal price;
 
 	@Column(name = "ISBOOKED", nullable = false)
-	//@Enumerated(EnumType.STRING)
+
 	private boolean isBooked;
 
 	@Column(name = "DATE")
