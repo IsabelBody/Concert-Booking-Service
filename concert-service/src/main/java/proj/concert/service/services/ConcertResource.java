@@ -4,36 +4,50 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.persistence.EntityManager;
+import javax.persistence.EntityTransaction;
 import javax.persistence.NoResultException;
 import javax.persistence.TypedQuery;
 import javax.ws.rs.*;
-import javax.ws.rs.core.Cookie;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.NewCookie;
-import javax.ws.rs.core.Response;
+import javax.ws.rs.core.*;
 
 import org.apache.commons.lang3.NotImplementedException;
-import proj.concert.common.dto.BookingRequestDTO;
-import proj.concert.common.dto.ConcertDTO;
-import proj.concert.common.dto.ConcertInfoSubscriptionDTO;
-import proj.concert.common.dto.UserDTO;
+import proj.concert.common.dto.*;
 import proj.concert.common.types.BookingStatus;
+import proj.concert.service.domain.Booking;
 import proj.concert.service.domain.Concert;
+import proj.concert.service.domain.Seat;
 import proj.concert.service.domain.User;
 import proj.concert.service.jaxrs.LocalDateTimeParam;
+import proj.concert.service.mapper.BookingMapper;
 import proj.concert.service.mapper.ConcertMapper;
+import proj.concert.service.mapper.SeatMapper;
+
+import java.math.BigDecimal;
+import java.net.URI;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 import java.util.UUID;
+import java.util.stream.Collectors;
+
+import java.net.URI;
+import java.time.LocalDateTime;
+import java.util.*;
+
+import javax.persistence.*;
+import javax.ws.rs.*;
+import javax.ws.rs.container.AsyncResponse;
+import javax.ws.rs.container.Suspended;
+import javax.ws.rs.core.*;
 
 @Path("/concert-service")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-
 public class ConcertResource {
 
     // Use for debugging in console
     private static Logger LOGGER = LoggerFactory.getLogger(ConcertResource.class);
-    private EntityManager em = PersistenceManager.instance().createEntityManager();
 
     @POST
     @Path("/login")
@@ -45,6 +59,8 @@ public class ConcertResource {
         - testFailedLogin_IncorrectPassword
         - testSuccessfulLogin
         */
+
+        EntityManager em = PersistenceManager.instance().createEntityManager();
 
         try {
             em.getTransaction().begin();
@@ -95,6 +111,7 @@ public class ConcertResource {
         - testGetSingleConcertWithMultiplePerformersAndDates
         - testGetNonExistentConcert
         */
+        EntityManager em = PersistenceManager.instance().createEntityManager();
 
         try {
             em.getTransaction().begin();
@@ -107,8 +124,7 @@ public class ConcertResource {
             } else {
                 return Response.status(Response.Status.NOT_FOUND).build();
             }
-        }
-        finally {
+        } finally {
             em.close();
         }
     }
@@ -177,13 +193,15 @@ public class ConcertResource {
         throw new NotImplementedException();
     }
 
+
     @POST
     @Path("/bookings")
     public Response createBooking(BookingRequestDTO request, @CookieParam("auth") Cookie clientCookie) {
         // RETURN: Response with Location header in the form of "/bookings/{id}" if authenticated,
         //         otherwise, return Response object with status code
 
-        /* TESTS TO COVER:
+         /*
+         TESTS TO COVER:
         - testAttemptUnauthorizedBooking
         - testMakeSuccessfulBooking
         - testAttemptBookingWrongDate
@@ -192,8 +210,63 @@ public class ConcertResource {
         - testAttemptDoubleBooking_OverlappingSeats
         */
 
-        throw new NotImplementedException();
+        User user = getAuthenticatedUser(clientCookie);
+        // check user is authenticated
+        if (user == null) {
+            return Response.status(Response.Status.UNAUTHORIZED).build();
+        }
+
+        EntityManager em = PersistenceManager.instance().createEntityManager();
+        em.getTransaction().begin();
+
+        try {
+            // Check if the concert exists and check date exists
+            Concert concert = em.find(Concert.class, request.getConcertId());
+            if (concert == null || !concert.getDates().contains(request.getDate())) {
+                return Response.status(Response.Status.BAD_REQUEST).build();
+            }
+
+            // changing request from list of seat labels into list of seats
+            // querying the database
+            List<Seat> seats = em.createQuery("select s from Seat s where s.label in :seatLabels and s.date = :concertDate", Seat.class)
+                    .setParameter("seatLabels", request.getSeatLabels())
+                    .setParameter("concertDate", request.getDate())
+                    .getResultList();
+
+
+            // Check if the requested seats are available
+            for (Seat seat: seats) {
+                // if any seat is already booked, user is not allowed to book.
+                if (seat.getIsBooked()) {
+                    return Response.status(Response.Status.FORBIDDEN).build();
+                } else {
+                    seat.setIsBooked(true); // seat is now booked
+                    em.merge(seat); // data is already in database, so we merge
+                }
+            }
+
+            // Create the booking
+            Booking booking = new Booking(request.getConcertId(), request.getDate(), seats);
+            booking.setUser(user);
+
+            em.persist(booking);
+            em.getTransaction().commit();
+
+            URI location = new URI("/concert-service/bookings/" + booking.getId());
+            return Response.created(location).build();
+
+        } catch (Exception e) {
+            if (em.getTransaction().isActive()) {
+                em.getTransaction().rollback(); // if any error, don't save changes
+            }
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
+        } finally {
+            if (em != null && em.isOpen()) {
+                em.close();
+            }
+        }
     }
+
 
     @GET
     @Path("/bookings")
@@ -201,17 +274,46 @@ public class ConcertResource {
         // RETURN: a List<BookingDTO>
         //         or if not authenticated, just the Response object with status code
 
-        /* TESTS TO COVER:
-        - testGetAllBookingsForUser
-        - testAttemptGetAllBookingsWhenNotAuthenticated
+        /*
+                 TESTS TO COVER:
+                - testGetAllBookingsForUser
+                - testAttemptGetAllBookingsWhenNotAuthenticated
+
         */
+        EntityManager em = PersistenceManager.instance().createEntityManager();
 
-        // To add an ArrayList as a Response object's entity, you should use the following code:
-        // List<Concert> concerts = new ArrayList<Concert>();
-        // GenericEntity<List<Concert>> entity = new GenericEntity<List<Concert>>(concerts) {};
-        // ResponseBuilder builder = Response.ok(entity);
+        // check user is authenticated
+        User user = getAuthenticatedUser(clientCookie);
+        if (user == null) {
+            return Response.status(Response.Status.UNAUTHORIZED).build();
+        }
 
-        throw new NotImplementedException();
+        try {
+            em.getTransaction().begin();
+
+            // get bookings from user from database
+            List<Booking> bookings = em.createQuery("select b from Booking b where b.user = :user", Booking.class)
+                    .setParameter("user", user).getResultList();
+
+            // need to return list of dtos not booking objects
+            // converting each booking
+            List<BookingDTO> bookingDTOs = new ArrayList<>();
+            for (Booking booking: bookings) {
+                BookingDTO dto = BookingMapper.toDto(booking);
+                bookingDTOs.add(dto);
+            }
+            em.getTransaction().commit();
+            return Response.ok(bookingDTOs).build(); // success
+        } catch (Exception e) {
+            if (em.getTransaction().isActive()) {
+                em.getTransaction().rollback(); // error, don't save changes
+            }
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
+        } finally {
+            if (em != null && em.isOpen()) {
+                em.close();
+            }
+        }
     }
 
     @GET
@@ -224,56 +326,114 @@ public class ConcertResource {
         - testGetOwnBookingById
         - testAttemptGetOthersBookingById
         */
+        EntityManager em = PersistenceManager.instance().createEntityManager();
 
-        throw new NotImplementedException();
+        // getting user from cookie
+        User user = getAuthenticatedUser(clientCookie);
+
+        // checking if user is authenticated
+        if (user == null) {
+            return Response.status(Response.Status.FORBIDDEN).build();
+        }
+
+        try {
+            em.getTransaction().begin();
+            Booking booking = em.find(Booking.class, id);
+            em.getTransaction().commit();
+
+            // checking booking object exists and is owned by user
+            if (booking == null || !booking.getUser().equals(user)) {
+                return Response.status(Response.Status.FORBIDDEN).build();
+            }
+
+            // returned object needs to be dto
+            BookingDTO dtoBooking = BookingMapper.toDto(booking);
+            return Response.ok(dtoBooking).build(); // success
+
+        } finally {
+            if (em != null && em.isOpen()) {
+                em.close();
+            }
+        }
     }
 
     @GET
     @Path("/seats/{date}")
-    public Response getSeats(@PathParam("date") LocalDateTimeParam date,
-                             @QueryParam("status") BookingStatus status) {
+    public Response getSeats(@QueryParam("status") BookingStatus status, @PathParam("date") String dateTime) {
 
         // RETURN: a List<SeatDTO>
 
         /* TESTS TO COVER:
         - testGetBookedSeatsForDate
-        - testGetUnbookedSeatsForDate
-        - testGetAllSeatsForDate
+                - testGetUnbookedSeatsForDate
+                - testGetAllSeatsForDate
 
         ALSO USED IN:
         - testAttemptUnauthorizedBooking
-        - testMakeSuccessfulBooking
-        - testAttemptDoubleBooking_OverlappingSeats
-        */
+                - testMakeSuccessfulBooking
+                - testAttemptDoubleBooking_OverlappingSeats
+                */
+        EntityManager em = PersistenceManager.instance().createEntityManager();
 
-        // To use the 'date' param, do:
-        // LocalDateTime date = date.getLocalDateTime();
+        // date is given as string so convert to LocalDatetime
+        LocalDateTimeParam initDateObj = new LocalDateTimeParam(dateTime);
+        LocalDateTime datetime = initDateObj.getLocalDateTime();
 
-        // To add an ArrayList as a Response object's entity, you should use the following code:
-        // List<Concert> concerts = new ArrayList<Concert>();
-        // GenericEntity<List<Concert>> entity = new GenericEntity<List<Concert>>(concerts) {};
-        // ResponseBuilder builder = Response.ok(entity);
+        try {
+            em.getTransaction().begin();
 
-        throw new NotImplementedException();
+            List<Seat> seatList; // initiate list outside of conditional scope
+
+            // getting seat list from database
+            if (status == BookingStatus.Booked || status == BookingStatus.Unbooked) {
+                boolean status_param = false;
+                if (status == BookingStatus.Booked) {
+                    status_param = true;
+                }
+                seatList = em.createQuery("select s from Seat s where s.isBooked = :isBooked and s.date = :date", Seat.class)
+                        .setParameter("isBooked", status_param)
+                        .setParameter("date", datetime).getResultList();
+            // when booking status is any / undefined
+            } else {
+                seatList = em.createQuery("select s from Seat s where s.date = :date", Seat.class)
+                        .setParameter("date", datetime).getResultList();
+            }
+
+            // mapping each seat to a DTO
+            List<SeatDTO> seatDTOs = new ArrayList<>();
+            for (Seat seat: seatList) {
+                SeatDTO seatDTO = SeatMapper.toDto(seat);
+                seatDTOs.add(seatDTO);
+            }
+            return Response.ok().entity(seatDTOs).build();
+        } finally {
+            if (em != null && em.isOpen()) {
+                em.close();
+            }
+        }
+
     }
 
-    @POST
+
+
+
+/*    @POST
     @Path("/subscribe/concertInfo")
     public Response createSubscription(ConcertInfoSubscriptionDTO request) {
         // RETURN: a ConcertInfoNotificationDTO instance,
         //         otherwise, a Response object with status code
 
-        /* TESTS TO COVER:
+        *//* TESTS TO COVER:
         - testSubscription
         - testSubscriptionForDifferentConcert
         - testUnauthorizedSubscription
         - testBadSubscription
         - testBadSubscription_NonexistentConcert
         - testBadSubscription_NonexistentDate
-        */
+        *//*
 
         throw new NotImplementedException();
-    }
+    }*/
 
 
     /**
@@ -281,15 +441,17 @@ public class ConcertResource {
      *
      * @param clientCookie the Cookie whose name auth, extracted from a HTTP request message.
      *                     This can be null if there was no cookie in the request message.
-     *
      * @return a User object that has the associated token. If there is no token,
-     *         or no user can be found, return null.
+     * or no user can be found, return null.
      */
     private User getAuthenticatedUser(Cookie clientCookie) {
         User user = null;
+        EntityManager em = PersistenceManager.instance().createEntityManager();
+
 
         if (clientCookie != null) {
             // try to get the user the token is associated to
+
             try {
                 em.getTransaction().begin();
                 user = em.createQuery(
@@ -312,4 +474,8 @@ public class ConcertResource {
 
         return user;
     }
+
 }
+
+
+

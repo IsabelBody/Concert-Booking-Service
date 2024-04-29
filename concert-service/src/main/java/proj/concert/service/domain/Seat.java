@@ -22,6 +22,7 @@ public class Seat {
 	private BigDecimal price;
 
 	@Column(name = "ISBOOKED", nullable = false)
+
 	private boolean isBooked;
 
 	@Column(name = "DATE")

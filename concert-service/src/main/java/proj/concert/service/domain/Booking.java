@@ -12,6 +12,7 @@ import javax.persistence.*;
 @Entity
 @Table(name = "BOOKING")
 public class Booking {
+
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	@Column(name = "ID")
@@ -30,6 +31,9 @@ public class Booking {
 	@JoinColumn(name = "USER", nullable = false)
 	private User user;
 
+	private Long userId;
+
+
 	public Booking() {
 		// Default constructor
 	}
@@ -40,7 +44,17 @@ public class Booking {
 		this.seats = seats;
 	}
 
+	public Booking(long concertId, List<Seat> seatsToBook, LocalDateTime date, Long id) {
+		this.concertId = concertId;
+		this.date = date;
+		this.seats = seatsToBook;
+		this.userId = id;
+	}
+
 	// Getters & Setters
+	public long getId() { return id; }
+
+	public void setId(long id) { this.id = id; }
 	public long getConcertId() {
 		return concertId;
 	}
