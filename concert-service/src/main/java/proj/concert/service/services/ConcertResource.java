@@ -231,6 +231,8 @@ public class ConcertResource {
             List<Seat> seats = em.createQuery("select s from Seat s where s.label in :seatLabels and s.date = :concertDate", Seat.class)
                     .setParameter("seatLabels", request.getSeatLabels())
                     .setParameter("concertDate", request.getDate())
+                    // ensure there are no double bookings
+                    .setLockMode(LockModeType.PESSIMISTIC_WRITE) // FAILS
                     .getResultList();
 
 
