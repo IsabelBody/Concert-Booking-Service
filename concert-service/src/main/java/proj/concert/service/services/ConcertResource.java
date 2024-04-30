@@ -1,40 +1,32 @@
 package proj.concert.service.services;
 
+import javafx.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.persistence.EntityManager;
-import javax.persistence.EntityTransaction;
-import javax.persistence.NoResultException;
-import javax.persistence.TypedQuery;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 
-import org.apache.commons.lang3.NotImplementedException;
 import proj.concert.common.dto.*;
 import proj.concert.common.types.BookingStatus;
 import proj.concert.service.domain.*;
 import proj.concert.service.jaxrs.LocalDateTimeParam;
 import proj.concert.service.mapper.*;
+import proj.concert.service.util.TheatreLayout;
 
-import java.math.BigDecimal;
 import java.net.URI;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-
 import java.util.UUID;
-import java.util.stream.Collectors;
-
-import java.net.URI;
-import java.time.LocalDateTime;
-import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import javax.persistence.*;
-import javax.ws.rs.*;
 import javax.ws.rs.container.AsyncResponse;
 import javax.ws.rs.container.Suspended;
-import javax.ws.rs.core.*;
 
 @Path("/concert-service")
 @Produces(MediaType.APPLICATION_JSON)
@@ -43,6 +35,14 @@ public class ConcertResource {
 
     // Use for debugging in console
     private static Logger LOGGER = LoggerFactory.getLogger(ConcertResource.class);
+
+    /* Dictionary storing all subscriptions, where key is the date of the concert
+    and the value is the list of subscribers that have subscribed to that particular date.
+    Each subscriber is represented by an AsyncResponse object and the threshold of the response.
+    */
+    private static HashMap<LocalDateTime, ArrayList<Pair<AsyncResponse, Integer>>> subscriptions = new HashMap<>();
+
+    private static ExecutorService threadPool = Executors.newSingleThreadExecutor();
 
     @POST
     @Path("/login")
@@ -325,6 +325,10 @@ public class ConcertResource {
             em.persist(booking);
             em.getTransaction().commit();
 
+            LOGGER.info("!! notifying subscribers NOW");
+            // notify subscribers to check whether the threshold of seats booked is met
+            notifySubscribers(request.getDate());
+
             URI location = new URI("/concert-service/bookings/" + booking.getId());
             return Response.created(location).build();
 
@@ -493,61 +497,143 @@ public class ConcertResource {
     }
 
 
-
-
-/*    @POST
+    @POST
     @Path("/subscribe/concertInfo")
-    public Response createSubscription(ConcertInfoSubscriptionDTO request) {
+    public void createSubscription(@Suspended AsyncResponse response, ConcertInfoSubscriptionDTO request, @CookieParam("auth") Cookie clientCookie) {
         // RETURN: a ConcertInfoNotificationDTO instance,
         //         otherwise, a Response object with status code
 
-        *//* TESTS TO COVER:
+        /* TESTS TO COVER:
         - testSubscription
         - testSubscriptionForDifferentConcert
+
+        COVERED TESTS:
         - testUnauthorizedSubscription
-        - testBadSubscription
         - testBadSubscription_NonexistentConcert
         - testBadSubscription_NonexistentDate
-        *//*
+        */
+        EntityManager em = PersistenceManager.instance().createEntityManager();
 
-        throw new NotImplementedException();
-    }*/
+        User user = getAuthenticatedUser(clientCookie);
 
+        if (user == null) {
+            response.resume(Response.status(Response.Status.UNAUTHORIZED).build());
+        } else {
+            long concertId = request.getConcertId();
+            LocalDateTime date = request.getDate();
+            int percentageBooked = request.getPercentageBooked();
+
+            try {
+                em.getTransaction().begin();
+                Concert concert = em.createQuery(
+                                "select c from Concert c where c.id = :id and :date member of c.dates", Concert.class)
+                        .setParameter("id", concertId)
+                        .setParameter("date", date)
+                        .getSingleResult();
+
+                em.getTransaction().commit();
+
+                // Add subscription request to dictionary of current subscriptions
+                if (subscriptions.containsKey(date)) {
+                    // Add subscription to an already existing list of subscribers for that date
+                    subscriptions.get(date).add(new Pair<>(response, percentageBooked));
+                } else {
+                    // Create a new list of subscribers for that date if there isn't one already
+                    ArrayList<Pair<AsyncResponse, Integer>> subscriptionsForConcert = new ArrayList<>();
+                    subscriptionsForConcert.add(new Pair<>(response, percentageBooked));
+                    subscriptions.put(date, subscriptionsForConcert);
+                }
+
+            } catch (Exception e) {
+                LOGGER.info("ERROR OCCURED in Creating Subscription: " + e.getClass().getCanonicalName());
+                response.resume(Response.status(Response.Status.BAD_REQUEST).build());
+            } finally {
+                em.close();
+            }
+        }
+
+    }
+
+
+    /**
+     * Helper method that notifies all subscribers for a particular concert / date.
+     * @param date the date of the concert that has just been booked for.
+     */
+    private void notifySubscribers(LocalDateTime date) {
+        EntityManager em = PersistenceManager.instance().createEntityManager();
+
+        // Get list of subscribers for that date
+        ArrayList<Pair<AsyncResponse, Integer>> subscribers = subscriptions.get(date);
+
+        if (subscribers != null) {
+            try {
+                em.getTransaction().begin();
+
+                // Get all seats that are currently available
+                List<Seat> unbookedSeats = em.createQuery(
+                                "select s from Seat s where s.date = :date and s.isBooked = false", Seat.class)
+                        .setParameter("date", date)
+                        .setLockMode(LockModeType.PESSIMISTIC_READ)
+                        .getResultList();
+
+                em.getTransaction().commit();
+
+                int totalUnbookedSeats = unbookedSeats.size();
+                int totalBookedSeats = TheatreLayout.NUM_SEATS_IN_THEATRE - totalUnbookedSeats;
+                double proportionBooked = (double) totalBookedSeats / TheatreLayout.NUM_SEATS_IN_THEATRE;
+
+                synchronized (subscribers) {
+                    // For each subscriber, check whether their specific threshold is met
+                    for (Pair<AsyncResponse, Integer> subscriber : subscribers) {
+                        double threshold = (double) subscriber.getValue() / 100;
+                        if (proportionBooked >= threshold) {
+                            // Create a notification with the number of seats remaining for the concert
+                            ConcertInfoNotificationDTO notification = new ConcertInfoNotificationDTO(totalUnbookedSeats);
+
+                            subscriber.getKey().resume(notification);
+                        }
+                    }
+                }
+
+            } catch (Exception e) {
+                LOGGER.info("ERROR OCCURED in Notifying Subscribers" + e.getClass().getCanonicalName());
+            } finally {
+                em.close();
+            }
+        }
+
+    }
 
     /**
      * Helper method that gets a User object based on provided token.
      *
      * @param clientCookie the Cookie whose name auth, extracted from a HTTP request message.
      *                     This can be null if there was no cookie in the request message.
+     *
      * @return a User object that has the associated token. If there is no token,
-     * or no user can be found, return null.
+     *         or no user can be found, return null.
      */
     private User getAuthenticatedUser(Cookie clientCookie) {
-        User user = null;
+
         EntityManager em = PersistenceManager.instance().createEntityManager();
+        User user = null;
 
+        try {
+            em.getTransaction().begin();
 
-        if (clientCookie != null) {
-            // try to get the user the token is associated to
+            user = em.createQuery(
+                            "select u from User u where u.token = :token", User.class)
+                    .setParameter("token", clientCookie.getValue())
+                    .getSingleResult();
 
-            try {
-                em.getTransaction().begin();
-                user = em.createQuery(
-                                "select u from User u where u.token = :token", User.class)
-                        .setParameter("token", clientCookie.getValue())
-                        .getSingleResult();
+            LOGGER.info("user: " + user.getUsername() + " w/ token: " + user.getToken());
 
-                LOGGER.info("user's token: " + user.getToken());
-                LOGGER.info("user's username: " + user.getUsername());
+            em.getTransaction().commit();
 
-                em.getTransaction().commit();
-
-            } catch (Exception e) {
-                LOGGER.info("an error occured" + e.getClass().getCanonicalName());
-            } finally {
-                if (em != null && em.isOpen())
-                    em.close();
-            }
+        } catch (Exception e) {
+            LOGGER.info("ERROR OCCURED in Authenticating User: " + e.getClass().getCanonicalName());
+        } finally {
+            em.close();
         }
 
         return user;
