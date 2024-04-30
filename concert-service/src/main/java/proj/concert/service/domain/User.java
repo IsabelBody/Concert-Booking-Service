@@ -27,6 +27,7 @@ public class User {
     private String password;
 
     @Column(name = "VERSION")
+    @Version
     private Long version;
 
     @OneToMany(mappedBy = "user")
