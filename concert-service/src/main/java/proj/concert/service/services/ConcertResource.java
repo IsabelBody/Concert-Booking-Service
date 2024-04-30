@@ -301,28 +301,26 @@ public class ConcertResource {
 
             // changing request from list of seat labels into list of seats
             // querying the database
-            List<Seat> seats = em.createQuery("select s from Seat s where s.label in :seatLabels and s.date = :concertDate", Seat.class)
+            List<Seat> seats = em.createQuery("select s from Seat s where s.label in :seatLabels and s.date = :concertDate and isBooked = false", Seat.class)
                     .setParameter("seatLabels", request.getSeatLabels())
                     .setParameter("concertDate", request.getDate())
                     // ensure there are no double bookings
-                    .setLockMode(LockModeType.PESSIMISTIC_WRITE) // FAILS
+                    .setLockMode(LockModeType.PESSIMISTIC_WRITE)
                     .getResultList();
 
+            em.getTransaction().commit();
 
-            // Check if the requested seats are available
-            for (Seat seat: seats) {
-                // if any seat is already booked, user is not allowed to book.
-                if (seat.getIsBooked()) {
-                    return Response.status(Response.Status.FORBIDDEN).build();
-                } else {
-                    seat.setIsBooked(true); // seat is now booked
-                    em.merge(seat); // data is already in database, so we merge
-                }
+            if (seats.size() != request.getSeatLabels().size()) {
+                return Response.status(Response.Status.FORBIDDEN).build();
             }
 
             // Create the booking
+            em.getTransaction().begin();
             Booking booking = new Booking(request.getConcertId(), request.getDate(), seats);
             booking.setUser(user);
+            for (Seat seat : seats) {
+                seat.setIsBooked(true);
+            }
 
             em.persist(booking);
             em.getTransaction().commit();
