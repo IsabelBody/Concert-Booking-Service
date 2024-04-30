@@ -465,11 +465,16 @@ public class ConcertResource {
                 }
                 seatList = em.createQuery("select s from Seat s where s.isBooked = :isBooked and s.date = :date", Seat.class)
                         .setParameter("isBooked", status_param)
-                        .setParameter("date", datetime).getResultList();
+                        .setParameter("date", datetime)
+                        .setLockMode(LockModeType.PESSIMISTIC_READ)
+                        .getResultList();
+
             // when booking status is any / undefined
             } else {
                 seatList = em.createQuery("select s from Seat s where s.date = :date", Seat.class)
-                        .setParameter("date", datetime).getResultList();
+                        .setParameter("date", datetime)
+                        .setLockMode(LockModeType.PESSIMISTIC_READ)
+                        .getResultList();
             }
 
             // mapping each seat to a DTO
