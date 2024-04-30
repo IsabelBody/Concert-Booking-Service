@@ -63,6 +63,7 @@ public class ConcertResource {
                             "select u from User u where u.username = :username and u.password = :password", User.class)
                     .setParameter("username", credentials.getUsername())
                     .setParameter("password", credentials.getPassword())
+                    .setLockMode(LockModeType.OPTIMISTIC)
                     .getSingleResult();
 
             // Create cookie token
