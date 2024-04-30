@@ -13,14 +13,9 @@ import javax.ws.rs.core.*;
 import org.apache.commons.lang3.NotImplementedException;
 import proj.concert.common.dto.*;
 import proj.concert.common.types.BookingStatus;
-import proj.concert.service.domain.Booking;
-import proj.concert.service.domain.Concert;
-import proj.concert.service.domain.Seat;
-import proj.concert.service.domain.User;
+import proj.concert.service.domain.*;
 import proj.concert.service.jaxrs.LocalDateTimeParam;
-import proj.concert.service.mapper.BookingMapper;
-import proj.concert.service.mapper.ConcertMapper;
-import proj.concert.service.mapper.SeatMapper;
+import proj.concert.service.mapper.*;
 
 import java.math.BigDecimal;
 import java.net.URI;
@@ -133,64 +128,141 @@ public class ConcertResource {
     @Path("/concerts")
     public Response getAllConcerts() {
         // RETURN: a List<ConcertDTO>
-
+        EntityManager em = PersistenceManager.instance().createEntityManager();
         /* TESTS TO COVER:
         - testGetAllConcerts
         */
+        try {
+            em.getTransaction().begin();
 
-        // To add an ArrayList as a Response object's entity, you should use the following code:
-        // List<Concert> concerts = new ArrayList<Concert>();
-        // GenericEntity<List<Concert>> entity = new GenericEntity<List<Concert>>(concerts) {};
-        // ResponseBuilder builder = Response.ok(entity);
+            // get Concerts from database
+            List<Concert> concerts = em.createQuery("select c from Concert c", Concert.class).getResultList();
 
-        throw new NotImplementedException();
+            // need to return list of dtos not concert objects
+            // converting each concert
+            List<ConcertDTO> concertDTOS = new ArrayList<>();
+            for (Concert c: concerts) {
+                ConcertDTO dto = ConcertMapper.toDto(c);
+                concertDTOS.add(dto);
+            }
+            em.getTransaction().commit();
+            return Response.ok(concertDTOS).build(); // success
+        } catch (Exception e) {
+            if (em.getTransaction().isActive()) {
+                em.getTransaction().rollback(); // error, don't save changes
+            }
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
+        } finally {
+            if (em != null && em.isOpen()) {
+                em.close();
+            }
+        }
+
+//         To add an ArrayList as a Response object's entity, you should use the following code:
+//
+//         GenericEntity<List<Concert>> entity = new GenericEntity<List<Concert>>(concerts) {};
+//         ResponseBuilder builder = Response.ok(entity);
+
     }
 
     @GET
     @Path("/concerts/summaries")
     public Response getConcertSummaries() {
         // RETURN: a List<ConcertSummaryDTO>
-
+        EntityManager em = PersistenceManager.instance().createEntityManager();
         /* TESTS TO COVER:
         - testGetConcertSummaries
         */
+        try {
+            em.getTransaction().begin();
+
+            // get concerts
+            List<Concert> concerts = em.createQuery("select c from Concert c", Concert.class).getResultList();
+
+            // need to return list of dtos not concert objects
+            // converting each concert
+            List<ConcertSummaryDTO> concertSummaryDTOS = new ArrayList<>();
+            for (Concert c: concerts) {
+                ConcertSummaryDTO dto = ConcertSummaryMapper.toDto(c);
+                concertSummaryDTOS.add(dto);
+            }
+            em.getTransaction().commit();
+            return Response.ok(concertSummaryDTOS).build(); // success
+        } catch (Exception e) {
+            if (em.getTransaction().isActive()) {
+                em.getTransaction().rollback(); // error, don't save changes
+            }
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
+        } finally {
+            if (em != null && em.isOpen()) {
+                em.close();
+            }
+        }
+
 
         // To add an ArrayList as a Response object's entity, you should use the following code:
         // List<Concert> concerts = new ArrayList<Concert>();
         // GenericEntity<List<Concert>> entity = new GenericEntity<List<Concert>>(concerts) {};
         // ResponseBuilder builder = Response.ok(entity);
-
-        throw new NotImplementedException();
     }
 
     @GET
     @Path("/performers/{id}")
     public Response getSinglePerformer(@PathParam("id") long id) {
         // RETURN: a PerformerDTO instance
-
+        EntityManager em = PersistenceManager.instance().createEntityManager();
         /* TESTS TO COVER:
         - testGetSinglePerformer
         - testGetNonExistentPerformer
         */
+        try {
+            em.getTransaction().begin();
+            Performer performer = em.find(Performer.class, id);
+            em.getTransaction().commit();
 
-        throw new NotImplementedException();
+            if (performer != null) {
+                PerformerDTO dtoPerformer = PerformerMapper.toDto(performer);
+                return Response.ok(dtoPerformer).build();
+            } else {
+                return Response.status(Response.Status.NOT_FOUND).build();
+            }
+        }
+        finally {
+            em.close();
+        }
+
     }
 
     @GET
     @Path("/performers")
     public Response getAllPerformers() {
         // RETURN: a List<PerformerDTO>
+        EntityManager em = PersistenceManager.instance().createEntityManager();
+        try {
+            em.getTransaction().begin();
 
-        /* TESTS TO COVER:
-        - testGetAllPerformers
-        */
+            // get performers from database
+            List<Performer> performers = em.createQuery("select p from Performer p").getResultList();
 
-        // To add an ArrayList as a Response object's entity, you should use the following code:
-        // List<Concert> concerts = new ArrayList<Concert>();
-        // GenericEntity<List<Concert>> entity = new GenericEntity<List<Concert>>(concerts) {};
-        // ResponseBuilder builder = Response.ok(entity);
-
-        throw new NotImplementedException();
+            // need to return list of dtos not performer objects
+            // converting each performer
+            List<PerformerDTO> performerDTOS = new ArrayList<>();
+            for (Performer p: performers) {
+                PerformerDTO dto = PerformerMapper.toDto(p);
+                performerDTOS.add(dto);
+            }
+            em.getTransaction().commit();
+            return Response.ok(performerDTOS).build(); // success
+        } catch (Exception e) {
+            if (em.getTransaction().isActive()) {
+                em.getTransaction().rollback(); // error, don't save changes
+            }
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
+        } finally {
+            if (em != null && em.isOpen()) {
+                em.close();
+            }
+        }
     }
 
 
