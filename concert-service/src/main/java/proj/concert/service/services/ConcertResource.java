@@ -13,6 +13,7 @@ import proj.concert.common.types.BookingStatus;
 import proj.concert.service.domain.*;
 import proj.concert.service.jaxrs.LocalDateTimeParam;
 import proj.concert.service.mapper.*;
+import proj.concert.service.util.ConcertInfoSubscription;
 import proj.concert.service.util.TheatreLayout;
 
 import java.net.URI;
@@ -38,11 +39,9 @@ public class ConcertResource {
 
     /* Dictionary storing all subscriptions, where key is the date of the concert
     and the value is the list of subscribers that have subscribed to that particular date.
-    Each subscriber is represented by an AsyncResponse object and the threshold of the response.
+    Each subscriber is represented by a ConcertInfoSubscription object.
     */
-    private static HashMap<LocalDateTime, ArrayList<Pair<AsyncResponse, Integer>>> subscriptions = new HashMap<>();
-
-    private static ExecutorService threadPool = Executors.newSingleThreadExecutor();
+    private static HashMap<LocalDateTime, ArrayList<ConcertInfoSubscription>> subscriptions = new HashMap<>();
 
     @POST
     @Path("/login")
@@ -540,11 +539,11 @@ public class ConcertResource {
                 // Add subscription request to dictionary of current subscriptions
                 if (subscriptions.containsKey(date)) {
                     // Add subscription to an already existing list of subscribers for that date
-                    subscriptions.get(date).add(new Pair<>(response, percentageBooked));
+                    subscriptions.get(date).add(new ConcertInfoSubscription(response, percentageBooked));
                 } else {
                     // Create a new list of subscribers for that date if there isn't one already
-                    ArrayList<Pair<AsyncResponse, Integer>> subscriptionsForConcert = new ArrayList<>();
-                    subscriptionsForConcert.add(new Pair<>(response, percentageBooked));
+                    ArrayList<ConcertInfoSubscription> subscriptionsForConcert = new ArrayList<>();
+                    subscriptionsForConcert.add(new ConcertInfoSubscription(response, percentageBooked));
                     subscriptions.put(date, subscriptionsForConcert);
                 }
 
@@ -567,7 +566,7 @@ public class ConcertResource {
         EntityManager em = PersistenceManager.instance().createEntityManager();
 
         // Get list of subscribers for that date
-        ArrayList<Pair<AsyncResponse, Integer>> subscribers = subscriptions.get(date);
+        ArrayList<ConcertInfoSubscription> subscribers = subscriptions.get(date);
 
         if (subscribers != null) {
             try {
@@ -588,13 +587,13 @@ public class ConcertResource {
 
                 synchronized (subscribers) {
                     // For each subscriber, check whether their specific threshold is met
-                    for (Pair<AsyncResponse, Integer> subscriber : subscribers) {
-                        double threshold = (double) subscriber.getValue() / 100;
+                    for (ConcertInfoSubscription subscriber : subscribers) {
+                        double threshold = (double) subscriber.getThreshold() / 100;
                         if (proportionBooked >= threshold) {
                             // Create a notification with the number of seats remaining for the concert
                             ConcertInfoNotificationDTO notification = new ConcertInfoNotificationDTO(totalUnbookedSeats);
 
-                            subscriber.getKey().resume(notification);
+                            subscriber.getResponse().resume(notification);
                         }
                     }
                 }
