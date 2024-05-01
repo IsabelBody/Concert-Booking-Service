@@ -473,12 +473,16 @@ public class ConcertResource {
                         .setLockMode(LockModeType.PESSIMISTIC_READ)
                         .getResultList();
 
+                em.getTransaction().commit();
+
             // when booking status is any / undefined
             } else {
                 seatList = em.createQuery("select s from Seat s where s.date = :date", Seat.class)
                         .setParameter("date", datetime)
                         .setLockMode(LockModeType.PESSIMISTIC_READ)
                         .getResultList();
+
+                em.getTransaction().commit();
             }
 
             // mapping each seat to a DTO
