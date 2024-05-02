@@ -448,7 +448,6 @@ public class ConcertResource {
             BookingDTO dtoBooking = BookingMapper.toDto(booking);
 
             return Response.ok(dtoBooking).build(); // success
-
         } finally {
             if (em != null && em.isOpen()) {
                 em.close();

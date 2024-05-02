@@ -27,7 +27,7 @@ public class Booking {
 	/* One booking to many seats.
 	eager fetching as seats & booking are always used in conjunct,
 	 so it is optimal to have that data pre-loaded. */
-	@OneToMany(fetch = FetchType.EAGER)
+	@OneToMany(fetch = FetchType.EAGER, cascade = {CascadeType.PERSIST})
 	private List<Seat> seats = new ArrayList<>();
 
 	/*
@@ -35,7 +35,7 @@ public class Booking {
 	Fetch type is LAZY as user & booking objects are accessed independently sometimes,
 	so data should not loaded until needed.
 	 */
-	@ManyToOne(fetch = FetchType.LAZY)
+	@ManyToOne(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST})
 	@JoinColumn(name = "USER", nullable = false)
 	private User user;
 
