@@ -22,15 +22,14 @@ public class Seat {
 	private BigDecimal price;
 
 	@Column(name = "ISBOOKED", nullable = false)
-
 	private boolean isBooked;
 
 	@Column(name = "DATE")
 	private LocalDateTime date;
 
-	public Seat() {
-	}
+	public Seat() { }
 
+	// to align with seatDTO
 	public Seat(String label, BigDecimal price) {
 		this.label = label;
 		this.price = price;

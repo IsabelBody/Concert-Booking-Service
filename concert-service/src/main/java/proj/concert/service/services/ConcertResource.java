@@ -293,11 +293,30 @@ public class ConcertResource {
         em.getTransaction().begin();
 
         try {
-            // Check if the concert exists and check date exists
-            Concert concert = em.find(Concert.class, request.getConcertId());
-            if (concert == null || !concert.getDates().contains(request.getDate())) {
+            /*
+            Check if the concert exists and check date exists
+            Query to get concert and seats at the same time. This is an optimisation to avoid
+            iterating over every date in each concert.
+             */
+            TypedQuery<Concert> query = em.createQuery(
+                            "SELECT c FROM Concert c LEFT JOIN FETCH c.dates WHERE c.id = :concertId", Concert.class)
+                    .setParameter("concertId", request.getConcertId());
+
+            // Execute the query, check if the concert & date exists
+            Concert concert;
+            try {
+                concert = query.getSingleResult();
+            } catch (NoResultException e) {
+                // if concert at that date is not found, return error
                 return Response.status(Response.Status.BAD_REQUEST).build();
             }
+
+            // Check if the concert date exists
+            if (!concert.getDates().contains(request.getDate())) {
+                return Response.status(Response.Status.BAD_REQUEST).build();
+            }
+
+
 
             // changing request from list of seat labels into list of seats
             // querying the database

@@ -24,15 +24,20 @@ public class Booking {
 	@Column(name = "DATE", nullable = false)
 	private LocalDateTime date;
 
+	/* default lazy loading is kept,
+	as dynamic eager fetching is implemented
+	 at the service layer */
 	@OneToMany()
 	private List<Seat> seats = new ArrayList<>();
 
-	@ManyToOne
+	/*
+	Each booking relates to one user.
+	Fetch type is LAZY because
+
+	 */
+	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "USER", nullable = false)
 	private User user;
-
-	private Long userId;
-
 
 	public Booking() {
 		// Default constructor
@@ -44,12 +49,6 @@ public class Booking {
 		this.seats = seats;
 	}
 
-	public Booking(long concertId, List<Seat> seatsToBook, LocalDateTime date, Long id) {
-		this.concertId = concertId;
-		this.date = date;
-		this.seats = seatsToBook;
-		this.userId = id;
-	}
 
 	// Getters & Setters
 	public long getId() { return id; }
@@ -80,7 +79,6 @@ public class Booking {
 	public User getUser() {
 		return user;
 	}
-
 
 	public void setUser(User user) {
 		this.user = user;
