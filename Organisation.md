@@ -1,12 +1,14 @@
 # Team Members:
 - **Sophia Halapchuk** / `shal847` / micattoc
-- **Jason Peng** / `jpen687` / jaspeng6
 - **Isabel Body** / `ibod875` / IsabelBody
+- **Jason Peng** / `jpen687` / jaspeng6
+
 
 # Summary of each team member’s contributions
-### Sophia Halapchuk
-### Jason Peng
-### Isabel Body 
+**Sophia Halapchuk:** Jackson annotations, Mapper classes, User domain class, Login and Subscription/Notification HTTP methods, Transaction locking for concurrency
+<br><br>**Isabel Body:**
+<br><br>**Jason Peng:**
+
 
 # Collaboration practices 
 - ERD, planning and design decisions created collaboratively to develop shared project understanding, but implementation done individually 
