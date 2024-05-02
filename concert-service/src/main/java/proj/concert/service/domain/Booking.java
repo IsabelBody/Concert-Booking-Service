@@ -24,16 +24,16 @@ public class Booking {
 	@Column(name = "DATE", nullable = false)
 	private LocalDateTime date;
 
-	/* default lazy loading is kept,
-	as dynamic eager fetching is implemented
-	 at the service layer */
-	@OneToMany()
+	/* One booking to many seats.
+	eager fetching as seats & booking are always used in conjunct,
+	 so it is optimal to have that data pre-loaded. */
+	@OneToMany(fetch = FetchType.EAGER)
 	private List<Seat> seats = new ArrayList<>();
 
 	/*
 	Each booking relates to one user.
-	Fetch type is LAZY because
-
+	Fetch type is LAZY as user & booking objects are accessed independently sometimes,
+	so data should not loaded until needed.
 	 */
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "USER", nullable = false)
