@@ -124,7 +124,10 @@ public class ConcertResource {
                 concertDTOS.add(dto);
             }
             em.getTransaction().commit();
-            return Response.ok(concertDTOS).build(); // success
+            GenericEntity<List<ConcertDTO>> entity = new GenericEntity<List<ConcertDTO>>(concertDTOS) {};
+            Response.ResponseBuilder builder = Response.ok(entity);
+            return builder.build();
+
         } catch (Exception e) {
             if (em.getTransaction().isActive()) {
                 em.getTransaction().rollback(); // error, don't save changes
@@ -138,7 +141,7 @@ public class ConcertResource {
 
 //         To add an ArrayList as a Response object's entity, you should use the following code:
 //
-//         GenericEntity<List<Concert>> entity = new GenericEntity<List<Concert>>(concerts) {};
+//         GenericEntity<List<ConcertDTO>> concertDTOS = new GenericEntity<List<Concert>>(concerts) {};
 //         ResponseBuilder builder = Response.ok(entity);
 
     }
@@ -163,7 +166,10 @@ public class ConcertResource {
                 concertSummaryDTOS.add(dto);
             }
             em.getTransaction().commit();
-            return Response.ok(concertSummaryDTOS).build(); // success
+
+            GenericEntity<List<ConcertSummaryDTO>> entity = new GenericEntity<List<ConcertSummaryDTO>>(concertSummaryDTOS) {};
+            Response.ResponseBuilder builder = Response.ok(entity);
+            return builder.build();
         } catch (Exception e) {
             if (em.getTransaction().isActive()) {
                 em.getTransaction().rollback(); // error, don't save changes
@@ -228,7 +234,11 @@ public class ConcertResource {
                 performerDTOS.add(dto);
             }
             em.getTransaction().commit();
-            return Response.ok(performerDTOS).build(); // success
+
+            GenericEntity<List<PerformerDTO>> entity = new GenericEntity<List<PerformerDTO>>(performerDTOS) {};
+            Response.ResponseBuilder builder = Response.ok(entity);
+            return builder.build();
+
         } catch (Exception e) {
             if (em.getTransaction().isActive()) {
                 em.getTransaction().rollback(); // error, don't save changes

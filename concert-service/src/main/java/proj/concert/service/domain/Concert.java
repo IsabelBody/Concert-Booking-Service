@@ -32,7 +32,7 @@ public class Concert{
     @Column(name="DATE")
     private Set<LocalDateTime> dates = new HashSet<>();
 
-    @ManyToMany(cascade = (CascadeType.PERSIST, CascadeType.REMOVE, fetch = FetchType.LAZY)
+    @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.REMOVE}, fetch = FetchType.LAZY)
     @org.hibernate.annotations.Fetch(FetchMode.SUBSELECT) //optimizes n+1 select problem
     @JoinTable(
             name = "CONCERT_PERFORMER",
