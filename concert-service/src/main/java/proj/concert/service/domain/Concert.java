@@ -7,6 +7,8 @@ import javax.persistence.*;
 
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
 
 @Entity
 @Table(name="CONCERTS")
@@ -30,7 +32,8 @@ public class Concert{
     @Column(name="DATE")
     private Set<LocalDateTime> dates = new HashSet<>();
 
-    @ManyToMany(cascade = CascadeType.PERSIST)
+    @ManyToMany(cascade = (CascadeType.PERSIST, CascadeType.REMOVE, fetch = FetchType.LAZY)
+    @org.hibernate.annotations.Fetch(FetchMode.SUBSELECT) //optimizes n+1 select problem
     @JoinTable(
             name = "CONCERT_PERFORMER",
             joinColumns = @JoinColumn(name = "CONCERT_ID"),

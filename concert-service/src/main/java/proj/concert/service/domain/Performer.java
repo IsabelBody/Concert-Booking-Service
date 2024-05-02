@@ -29,8 +29,6 @@ public class Performer {
     @Column(name="BLURB", columnDefinition="TEXT", nullable = false)
     private String blurb;
 
-    @ManyToMany(mappedBy = "performers")
-    private Set<Concert> concerts = new HashSet<>();
 
     public Performer() {
     }
