@@ -16,20 +16,27 @@
 - all code was reviewed through pull requests
 - Github Issues & discord were used for ongoing idea discussions & updates 
 
-Please reference both open and closed issues starting with a date (e.g 4/04) to understand the full scope of our planning & collaboration.
+Please reference open issues to understand the full scope of our planning & collaboration, and closed issues for our independent task allocation.
 
 # Explanation of Domain Design Choices 
 *Short description of how the domain model is organised (2-3 sentences)*
+<br> *(Jason + Isabel add onto this)*
+- Fields & data types:
+- Unique identifiers & class relationships:
 
-### Relevant Field Data Types Decisions
-### Unique Identifiers & Class Relationships. 
-### Use of Lazy Loading, Eager Fetching, Cascading 
+### Use of Lazy Loading, Eager Fetching, Cascading
+*(Jason explains how he implemented this in his classes):*
+<br><br>*(Isabel explains how she implemented this in her classes):*
 
-# Strategy used to minimise the chance of concurrency errors  
+# Strategy used to minimise the chance of concurrency errors
+- Pessimistic locking when creating bookings and loading seats was used because the locks with exclusive access prevents other concurrent transactions from accessing the same resource concurrently, particularly when conflicts are frequent. The conflict of double-booking the same seats is highly expected when lots of users use the service.
+  
+- Optimistic locking for logging in users was used because there is a low chance of conflicts (user's credentials won't be changed that frequently) and this approach enables concurrent access to a shared resource (the Users table), unlike Pessimistic locking. This means that when there are a lot of users, the system concurrency is efficient. 
 
 
 # Other design decisions 
 - We've created an additional class (not part of the domain model): ConcertInfoSubscription, to store the subscription response and the threshold of seats booked to notify subscribers.
 - We used Publish/Subscribe asynchronous communication because multiple 'clients' are subscribed to the server (multiple subscription requests), and the server must publish messages to them (notifications), so messaging may be frequent (so not Server-side push) and there won't be long-running tasks (so not Priority scheduling).
 
-(.. to add after your explanations : "these decisions all lead to **scalability** as our choice of locking ensures that concurrency issues are minimised when there are a lot of requests and the way we mitigate Lazy Loading and Eager Fetching ensures that the system can efficiently return a lot of records (while the system scales up).
+
+These decisions all lead to **scalability** as our choice of locking ensures that concurrency issues are minimised when there are a lot of requests and the way we mitigate Lazy Loading and Eager Fetching ensures that the system can efficiently return a lot of records (while the system scales up).
