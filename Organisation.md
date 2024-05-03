@@ -5,7 +5,7 @@
 
 
 # Summary of each team member’s contributions
-**Isabel Body:**
+**Isabel Body:** booking & seat domain model, booking & seat HTTP methods
 <br><br>**Sophia Halapchuk:** Jackson annotations, Mapper classes, User domain class, Login and Subscription/Notification HTTP methods, Transaction locking for concurrency
 <br><br>**Jason Peng:**
 
