@@ -267,9 +267,26 @@ public class ConcertResource {
 
         try {
             em.getTransaction().begin();
-            // Check if the concert exists and check date exists
-            Concert concert = em.find(Concert.class, request.getConcertId());
-            if (concert == null || !concert.getDates().contains(request.getDate())) {
+            /*
+            Checking if the concert exists and check date exists.
+            Query to get concert and seats at the same time. This is an optimisation to avoid
+            iterating over every date in each concert.
+             */
+            TypedQuery<Concert> query = em.createQuery(
+                            "SELECT c FROM Concert c LEFT JOIN FETCH c.dates WHERE c.id = :concertId", Concert.class)
+                    .setParameter("concertId", request.getConcertId());
+
+            // Execute query, check if the concert exists
+            Concert concert;
+            try {
+                concert = query.getSingleResult();
+            } catch (NoResultException e) {
+                return Response.status(Response.Status.BAD_REQUEST).build();
+            }
+
+            // Check if the concert date exists
+            // dates should be already fetched for this operation
+            if (!concert.getDates().contains(request.getDate())) {
                 return Response.status(Response.Status.BAD_REQUEST).build();
             }
 
@@ -284,6 +301,11 @@ public class ConcertResource {
 
             em.getTransaction().commit();
 
+
+            /*
+            Using .size() allows us to check the request without iterating over to
+            check parameters, increasing the efficiency of our code.
+             */
             if (seats.size() != request.getSeatLabels().size()) {
                 return Response.status(Response.Status.FORBIDDEN).build();
             }
@@ -345,7 +367,8 @@ public class ConcertResource {
                 bookingDTOs.add(dto);
             }
             em.getTransaction().commit();
-            return Response.ok(bookingDTOs).build(); // success
+            // returning a GenericType list, to fully align with testing.
+            return Response.ok(new GenericType<List<BookingDTO>>() {}).entity(bookingDTOs).build(); // success
         } catch (Exception e) {
             if (em.getTransaction().isActive()) {
                 em.getTransaction().rollback(); // error, don't save changes
@@ -422,7 +445,7 @@ public class ConcertResource {
 
                 em.getTransaction().commit();
 
-            // when booking status is any / undefined
+                // when booking status is any / undefined
             } else {
                 seatList = em.createQuery("select s from Seat s where s.date = :date", Seat.class)
                         .setParameter("date", datetime)
@@ -438,7 +461,8 @@ public class ConcertResource {
                 SeatDTO seatDTO = SeatMapper.toDto(seat);
                 seatDTOs.add(seatDTO);
             }
-            return Response.ok().entity(seatDTOs).build();
+            // Return GenericType list to fully align with testing.
+            return Response.ok(new GenericType<List<BookingDTO>>() {}).entity(seatDTOs).build(); // success
         } finally {
             if (em != null && em.isOpen()) {
                 em.close();
@@ -585,6 +609,5 @@ public class ConcertResource {
     }
 
 }
-
 
 
