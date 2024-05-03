@@ -37,8 +37,7 @@ public class Booking {
 
 	If booking is merged, refreshed, detached User will also.
 	 */
-	@ManyToOne(fetch = FetchType.LAZY,
-			cascade = {CascadeType.MERGE, CascadeType.DETACH, CascadeType.REFRESH})
+	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "USER", nullable = false)
 	private User user;
 
