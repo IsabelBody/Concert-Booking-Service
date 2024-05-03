@@ -28,6 +28,12 @@ Please reference open issues to understand the full scope of our planning & coll
 *(Jason explains how he implemented this in his classes):*
 <br><br>*(Isabel explains how she implemented this in her classes):*
 
+# Booking & Seat Domain Design Choices, Use of Lazy Loading, Eager Fetching, Cascading
+Booking has a many-to-one bidirectional relationship with user & a one-to-many bidirectional relationship with seats. The seat collection has cascade style persist so that changes in booking lead to changes in seats. As seats & booking are always used in conjunct, seats are eager loaded. However, a booking object does not always obtain user, so user is lazy loaded until needed. 
+When a booking is created in concertResource, it dynamic eager fetches concert dates to minimise queries - optimising performance which is necessary for our concurrency implementation. 
+
+
+
 # Strategy used to minimise the chance of concurrency errors
 - Pessimistic locking when creating bookings and loading seats was used because the locks with exclusive access prevents other concurrent transactions from accessing the same resource concurrently, particularly when conflicts are frequent. The conflict of double-booking the same seats is highly expected when lots of users use the service.
   
