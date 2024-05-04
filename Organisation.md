@@ -19,24 +19,27 @@
 Please reference open issues to understand the full scope of our planning & collaboration, and closed issues for our independent task allocation.
 
 # Explanation of Domain Design Choices 
-*Short description of how the domain model is organised (2-3 sentences)*
-<br> *(Jason + Isabel add onto this)* <br><br>
  The Concert class represents a concert event, with fields for title, image name, blurb, and dates, along with a many-to-many relationship with Performer class. The Performer class represents an artist performing at a concert, with fields for name, image name, genre, and blurb, along with a many-to-many relationship with Concert class. <br><br>
-- Fields & data types:
+ ### Fields & data types:
+#### Concert and performers: 
+Both classes utilize various data types such as String, Enum (Genre), LocalDateTime, and Sets for storing data related to concerts and performers respectively
+#### Booking and seat:
+As with all classes, fields align to DTO. Checking the status of isBooked is done with a boolean at the domain layer & with the enum in the resource class. 
 
-Concert and performers: Both classes utilize various data types such as String, Enum (Genre), LocalDateTime, and Sets for storing data related to concerts and performers respectively
-- Unique identifiers & class relationships:
+### Unique identifiers & class relationships:
+#### Concert and performers: 
+Both Concert and Performer classes use a Long Id as a unique identifier, and they establish a many-to-many relationship with each other through a join table named "CONCERT_PERFORMER".
 
-Concert and performers: Both Concert and Performer classes use a Long Id as a unique identifier, and they establish a many-to-many relationship with each other through a join table named "CONCERT_PERFORMER".
+#### Booking and seat
+Booking has a many-to-one bidirectional relationship with user & a one-to-many bidirectional relationship with seats. Concert is joined to Booking unidirectionally with concert id.
+Both classes use a Long Id as a unique identifier.
 
 ### Use of Lazy Loading, Eager Fetching, Cascading
-Concert and performers: In the Concert class, lazy loading is applied by default for the Set of Performers, meaning that Performer objects associated with a Concert will be loaded only when explicitly accessed. Otherwise, it is just the proxy of a performer object that is loaded.  Cascading is applied for persisting and deleting Concert-Performer relationships, ensuring that changes to Concert or Performer objects are cascaded to the join table "CONCERT_PERFORMER" for persistence. 
-<br><br>*(Isabel explains how she implemented this in her classes):*
-
-# Booking & Seat Domain Design Choices, Use of Lazy Loading, Eager Fetching, Cascading
-Booking has a many-to-one bidirectional relationship with user & a one-to-many bidirectional relationship with seats. The seat collection has cascade style persist so that changes in booking lead to changes in seats. As seats & booking are always used in conjunct, seats are eager loaded. However, a booking object does not always obtain user, so user is lazy loaded until needed. 
+#### Concert and performers: 
+In the Concert class, lazy loading is applied by default for the Set of Performers, meaning that Performer objects associated with a Concert will be loaded only when explicitly accessed. Otherwise, it is just the proxy of a performer object that is loaded.  Cascading is applied for persisting and deleting Concert-Performer relationships, ensuring that changes to Concert or Performer objects are cascaded to the join table "CONCERT_PERFORMER" for persistence. 
+#### Booking & Seat
+The seat collection has cascade style persist so that changes in booking lead to changes in seats. As seats & booking are always used in conjunct, seats are eager loaded. However, a booking object does not always obtain user, so user is lazy loaded until needed. 
 When a booking is created in concertResource, it dynamic eager fetches concert dates to minimise queries - optimising performance which is necessary for our concurrency implementation. 
-
 
 
 # Strategy used to minimise the chance of concurrency errors
@@ -51,3 +54,7 @@ When a booking is created in concertResource, it dynamic eager fetches concert d
 
 
 These decisions all lead to **scalability** as our choice of locking ensures that concurrency issues are minimised when there are a lot of requests and the way we mitigate Lazy Loading and Eager Fetching ensures that the system can efficiently return a lot of records (while the system scales up).
+
+
+# ERD 
+
