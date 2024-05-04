@@ -57,5 +57,4 @@ These decisions all lead to **scalability** as our choice of locking ensures tha
 
 
 # ERD 
-![331 Domain Model drawio](https://github.com/CS331-2024/project-project-5/assets/140023141/374d49bb-91d4-44e4-a3fa-8567cf0e356d)
-
+![331 Domain Model drawio (1)](https://github.com/CS331-2024/project-project-5/assets/140023141/1b33eedc-b441-4364-8597-1494ac214035)
