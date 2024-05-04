@@ -7,7 +7,7 @@
 # Summary of each team member’s contributions
 **Isabel Body:** booking & seat domain model, booking & seat HTTP methods
 <br><br>**Sophia Halapchuk:** Jackson annotations, Mapper classes, User domain class, Login and Subscription/Notification HTTP methods, Transaction locking for concurrency
-<br><br>**Jason Peng:**
+<br><br>**Jason Peng:** Concert & Performers domain model, concert & performers HTTP methods
 
 
 # Collaboration practices 
@@ -20,12 +20,17 @@ Please reference open issues to understand the full scope of our planning & coll
 
 # Explanation of Domain Design Choices 
 *Short description of how the domain model is organised (2-3 sentences)*
-<br> *(Jason + Isabel add onto this)*
+<br> *(Jason + Isabel add onto this)* <br><br>
+ The Concert class represents a concert event, with fields for title, image name, blurb, and dates, along with a many-to-many relationship with Performer class. The Performer class represents an artist performing at a concert, with fields for name, image name, genre, and blurb, along with a many-to-many relationship with Concert class. <br><br>
 - Fields & data types:
+
+Concert and performers: Both classes utilize various data types such as String, Enum (Genre), LocalDateTime, and Sets for storing data related to concerts and performers respectively
 - Unique identifiers & class relationships:
 
+Concert and performers: Both Concert and Performer classes use a Long Id as a unique identifier, and they establish a many-to-many relationship with each other through a join table named "CONCERT_PERFORMER".
+
 ### Use of Lazy Loading, Eager Fetching, Cascading
-*(Jason explains how he implemented this in his classes):*
+Concert and performers: In the Concert class, lazy loading is applied by default for the Set of Performers, meaning that Performer objects associated with a Concert will be loaded only when explicitly accessed. Otherwise, it is just the proxy of a performer object that is loaded.  Cascading is applied for persisting Concert-Performer relationships, ensuring that changes to Concert or Performer objects are cascaded to the join table "CONCERT_PERFORMER" for persistence. 
 <br><br>*(Isabel explains how she implemented this in her classes):*
 
 # Booking & Seat Domain Design Choices, Use of Lazy Loading, Eager Fetching, Cascading
