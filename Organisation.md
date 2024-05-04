@@ -31,7 +31,7 @@ As with all classes, fields align to DTO. Checking the status of isBooked is don
 Both Concert and Performer classes use a Long Id as a unique identifier, and they establish a many-to-many relationship with each other through a join table named "CONCERT_PERFORMER".
 
 #### Booking and seat
-Booking has a many-to-one bidirectional relationship with user & a one-to-many bidirectional relationship with seats. Concert is joined to Booking unidirectionally with concert id.
+Booking has a many-to-one unidirectional relationship with user & a one-to-many bidirectional relationship with seats. Concert is joined to Booking unidirectionally with concert id.
 Both classes use a Long Id as a unique identifier.
 
 ### Use of Lazy Loading, Eager Fetching, Cascading
