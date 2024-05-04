@@ -30,7 +30,7 @@ Concert and performers: Both classes utilize various data types such as String, 
 Concert and performers: Both Concert and Performer classes use a Long Id as a unique identifier, and they establish a many-to-many relationship with each other through a join table named "CONCERT_PERFORMER".
 
 ### Use of Lazy Loading, Eager Fetching, Cascading
-Concert and performers: In the Concert class, lazy loading is applied by default for the Set of Performers, meaning that Performer objects associated with a Concert will be loaded only when explicitly accessed. Otherwise, it is just the proxy of a performer object that is loaded.  Cascading is applied for persisting Concert-Performer relationships, ensuring that changes to Concert or Performer objects are cascaded to the join table "CONCERT_PERFORMER" for persistence. 
+Concert and performers: In the Concert class, lazy loading is applied by default for the Set of Performers, meaning that Performer objects associated with a Concert will be loaded only when explicitly accessed. Otherwise, it is just the proxy of a performer object that is loaded.  Cascading is applied for persisting and deleting Concert-Performer relationships, ensuring that changes to Concert or Performer objects are cascaded to the join table "CONCERT_PERFORMER" for persistence. 
 <br><br>*(Isabel explains how she implemented this in her classes):*
 
 # Booking & Seat Domain Design Choices, Use of Lazy Loading, Eager Fetching, Cascading
