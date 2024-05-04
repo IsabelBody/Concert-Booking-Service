@@ -35,7 +35,6 @@ public class Booking {
 	Fetch type is LAZY as user & booking objects are accessed independently sometimes,
 	so data should not loaded until needed.
 
-	If booking is merged, refreshed, detached User will also.
 	 */
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "USER", nullable = false)
